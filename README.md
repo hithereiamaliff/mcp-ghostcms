@@ -75,6 +75,7 @@ GHOST_API_URL=your_ghost_api_url GHOST_STAFF_API_KEY=your_staff_api_key npx @mod
 - `list_posts`: List blog posts with pagination (supports both text and JSON formats)
 - `read_post`: Retrieve full content of a specific post in HTML or plaintext formats
 - `search_posts_by_title`: Search for posts by title using exact or fuzzy matching
+- `update_post`: Update a specific post with new content and metadata
 
 ### Users Management
 - `list_users`: List all users with detailed role information
