@@ -259,7 +259,6 @@ Status: {newsletter.get('status', 'Unknown')}
 Visibility: {newsletter.get('visibility', 'Unknown')}
 Subscribe on Signup: {newsletter.get('subscribe_on_signup', False)}
 Sort Order: {newsletter.get('sort_order', 0)}
-Sender Name: {newsletter.get('sender_name', 'Unknown')}
 Sender Email: {newsletter.get('sender_email', 'Not set')}
 Sender Reply To: {newsletter.get('sender_reply_to', 'Not set')}
 Show Header Icon: {newsletter.get('show_header_icon', True)}
@@ -599,7 +598,6 @@ Description: {newsletter.get('description', 'No description')}
 Status: {newsletter.get('status', 'Unknown')}
 Visibility: {newsletter.get('visibility', 'Unknown')}
 Subscribe on Signup: {newsletter.get('subscribe_on_signup', False)}
-Sender Name: {newsletter.get('sender_name', 'Unknown')}
 ID: {newsletter.get('id', 'Unknown')}
 """
             formatted_newsletters.append(formatted_newsletter)
