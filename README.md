@@ -66,7 +66,7 @@ To use this with Claude Desktop, add the following to your `claude_desktop_confi
 ### Testing with MCP Inspector
 
 ```bash
-GHOST_API_URL=your_ghost_api_url GHOST_STAFF_API_KEY=your_staff_api_key npx @modelcontextprotocol/inspector uv --directory Desktop/mcp/ghost run src/main.py
+GHOST_API_URL=your_ghost_api_url GHOST_STAFF_API_KEY=your_staff_api_key npx @modelcontextprotocol/inspector uv --directory /path/to/ghost-mcp run src/main.py
 ```
 
 ## Available Tools
