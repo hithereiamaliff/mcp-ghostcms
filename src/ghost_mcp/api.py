@@ -63,7 +63,9 @@ async def make_ghost_request(
     endpoint: str,
     headers: Dict[str, str],
     ctx: Context = None,
-    is_resource: bool = False
+    is_resource: bool = False,
+    http_method: str = "GET",
+    json_data: Dict[str, Any] = None
 ) -> Dict[str, Any]:
     """Make an authenticated request to the Ghost API.
     
@@ -72,6 +74,8 @@ async def make_ghost_request(
         headers: Request headers
         ctx: Optional context for logging (not used for resources)
         is_resource: Whether this request is for a resource
+        http_method: HTTP method to use (GET or PUT)
+        json_data: JSON data to send with PUT requests
         
     Returns:
         Parsed JSON response
@@ -82,11 +86,14 @@ async def make_ghost_request(
     # Ensure clean URL construction with proper trailing slashes
     base_url = f"{API_URL.rstrip('/')}/ghost/api/admin"
     endpoint = endpoint.strip('/')
-    url = f"{base_url}/{endpoint}/"
+    url = f"{base_url}/{endpoint}"  # Remove trailing slash for PUT requests to work correctly
     
     async with httpx.AsyncClient(follow_redirects=True) as client:
         try:
-            response = await client.get(url, headers=headers)
+            if http_method == "PUT":
+                response = await client.put(url, headers=headers, json=json_data)
+            else:  # Default to GET
+                response = await client.get(url, headers=headers)
             response.raise_for_status()
             if not is_resource and ctx:
                 ctx.log("info", f"API Request to {url} successful")

@@ -41,19 +41,20 @@ def create_server() -> FastMCP:
     mcp.resource("post://{post_id}")(resources.handle_post_resource)
     mcp.resource("blog://info")(resources.handle_blog_info)
     
-    # Register tools
-    mcp.tool()(tools.list_users)
-    mcp.tool()(tools.list_members)
-    mcp.tool()(tools.list_tiers)
-    mcp.tool()(tools.list_offers)
-    mcp.tool()(tools.list_newsletters)
+    # Register tools with preprocessing for create_post
     mcp.tool()(tools.list_posts)
     mcp.tool()(tools.read_post)
+    mcp.tool()(tools.update_post)
     mcp.tool()(tools.search_posts_by_title)
+    mcp.tool()(tools.list_users)
     mcp.tool()(tools.read_user)
+    mcp.tool()(tools.list_members)
     mcp.tool()(tools.read_member)
+    mcp.tool()(tools.list_tiers)
     mcp.tool()(tools.read_tier)
+    mcp.tool()(tools.list_offers)
     mcp.tool()(tools.read_offer)
+    mcp.tool()(tools.list_newsletters)
     mcp.tool()(tools.read_newsletter)
     
     # Register prompts
