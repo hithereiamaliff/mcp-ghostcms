@@ -1,5 +1,7 @@
 # Ghost MCP Server
 
+[![smithery badge](https://smithery.ai/badge/@MFYDev/ghost-mcp)](https://smithery.ai/server/@MFYDev/ghost-mcp)
+
 A Model Context Protocol (MCP) server for interacting with Ghost CMS through LLM interfaces like Claude. This server provides secure and comprehensive access to your Ghost blog, leveraging JWT authentication and a rich set of MCP tools for managing posts, users, members, tiers, offers, and newsletters.
 
 ![demo](./assets/ghost-mcp-demo.gif)
@@ -15,6 +17,15 @@ A Model Context Protocol (MCP) server for interacting with Ghost CMS through LLM
 
 ## Installation
 
+### Installing via Smithery
+
+To install Ghost MCP Server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@MFYDev/ghost-mcp):
+
+```bash
+npx -y @smithery/cli install @MFYDev/ghost-mcp --client claude
+```
+
+### Manual Installation
 ```bash
 # Clone repository
 git clone git@github.com/mfydev/ghost-mcp.git
