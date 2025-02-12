@@ -77,6 +77,7 @@ GHOST_API_URL=your_ghost_api_url GHOST_STAFF_API_KEY=your_staff_api_key npx @mod
 - `read_post`: Retrieve full content of a specific post in HTML or plaintext formats
 - `create_post`: Create a new post with specified content and metadata
 - `update_post`: Update a specific post with new content and metadata
+- `delete_post`: Delete a specific post
 
 ### Users Management
 - `list_users`: List all users with detailed role information
