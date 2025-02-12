@@ -798,6 +798,106 @@ UUID: {post.get('uuid', 'Unknown')}
         if ctx:
             ctx.error(f"Failed to read post: {str(e)}")
         return str(e)
+    
+async def create_post(post_data: dict, ctx: Context = None) -> str:
+    """Create a new blog post.
+    
+    Args:
+        post_data: Dictionary containing post data with at least one of these required fields:
+            - title: The title of the post 
+            - lexical: The lexical content as a JSON string
+            - status: Post status ('draft' or 'published', default: 'draft')
+            Additional fields like tags, authors, etc. can also be included.
+            
+            Example:
+            {
+                "title": "My test post",
+                "lexical": "{\"root\":{\"children\":[{\"children\":[{\"detail\":0,\"format\":0,\"mode\":\"normal\",\"style\":\"\",\"text\":\"Hello World\",\"type\":\"text\",\"version\":1}],\"direction\":\"ltr\",\"format\":\"\",\"indent\":0,\"type\":\"paragraph\",\"version\":1}],\"direction\":\"ltr\",\"format\":\"\",\"indent\":0,\"type\":\"root\",\"version\":1}}",
+                "status": "published"
+            }
+            
+        ctx: Optional context for logging
+
+    Returns:
+        Formatted string containing the created post details
+
+    Raises:
+        GhostError: If there is an error accessing the Ghost API or invalid post data
+    """
+    if ctx:
+        ctx.info(f"Creating post with data: {post_data}")
+
+    if not isinstance(post_data, dict):
+        error_msg = "post_data must be a dictionary"
+        if ctx:
+            ctx.error(error_msg)
+        return error_msg
+
+    if 'title' not in post_data and 'lexical' not in post_data:
+        error_msg = "post_data must contain at least 'title' or 'lexical'"
+        if ctx:
+            ctx.error(error_msg)
+        return error_msg
+
+    try:
+        if ctx:
+            ctx.debug("Getting auth headers")
+        headers = await get_auth_headers(STAFF_API_KEY)
+        
+        # Ensure lexical is a valid JSON string if present
+        if 'lexical' in post_data:
+            try:
+                if isinstance(post_data['lexical'], dict):
+                    post_data['lexical'] = json.dumps(post_data['lexical'])
+                else:
+                    # Validate the JSON string
+                    json.loads(post_data['lexical'])
+            except json.JSONDecodeError as e:
+                error_msg = f"Invalid JSON in lexical content: {str(e)}"
+                if ctx:
+                    ctx.error(error_msg)
+                return error_msg
+
+        # Prepare post creation payload
+        request_data = {
+            "posts": [post_data]
+        }
+        
+        if ctx:
+            ctx.debug(f"Creating post with data: {json.dumps(request_data)}")
+
+        data = await make_ghost_request(
+            "posts/",
+            headers,
+            ctx,
+            http_method="POST",
+            json_data=request_data
+        )
+
+        if ctx:
+            ctx.debug("Post created successfully")
+
+        post = data["posts"][0]
+
+        # Format tags and authors for display
+        tags = [tag.get('name', 'Unknown') for tag in post.get('tags', [])]
+        authors = [author.get('name', 'Unknown') for author in post.get('authors', [])]
+
+        return f"""
+Post Created Successfully:
+Title: {post.get('title', 'Untitled')}
+Slug: {post.get('slug', 'No slug')}
+Status: {post.get('status', 'Unknown')}
+URL: {post.get('url', 'No URL')}
+Tags: {', '.join(tags) if tags else 'None'}
+Authors: {', '.join(authors) if authors else 'None'}
+Published At: {post.get('published_at', 'Not published')}
+ID: {post.get('id', 'Unknown')}
+"""
+    except GhostError as e:
+        if ctx:
+            ctx.error(f"Failed to create post: {str(e)}")
+        return str(e)
 
 async def update_post(post_id: str, update_data: dict, ctx: Context = None) -> str:
     """Update a blog post using lexical content.
@@ -919,6 +1019,7 @@ async def update_post(post_id: str, update_data: dict, ctx: Context = None) -> s
         # Get content preview (lexical content)
         lexical_content = post.get('lexical', '')
         content_preview = lexical_content[:200] + "..." if lexical_content else 'No content available'
+        excerpt = post.get('excerpt', 'No excerpt available')
         
         return f"""
 Post Updated Successfully:
@@ -933,6 +1034,7 @@ Authors: {', '.join(authors) if authors else 'None'}
 Published At: {post.get('published_at', 'Not published')}
 Updated At: {post.get('updated_at', 'Unknown')}
 Content Preview: {content_preview}
+Excerpt: {excerpt}
 """
     except GhostError as e:
         if ctx:

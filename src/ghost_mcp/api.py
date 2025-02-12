@@ -92,6 +92,8 @@ async def make_ghost_request(
         try:
             if http_method == "PUT":
                 response = await client.put(url, headers=headers, json=json_data)
+            elif http_method == "POST":
+                response = await client.post(url, headers=headers, json=json_data)
             else:  # Default to GET
                 response = await client.get(url, headers=headers)
             response.raise_for_status()
