@@ -8,5 +8,6 @@ wheels/
 
 # Virtual environments
 .venv
+.vscode
 ghost-admin-api.md
 mcp-python-sdk.md
