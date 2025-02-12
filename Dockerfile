@@ -21,9 +21,17 @@ RUN --mount=type=cache,target=/root/.cache/uv     uv sync --frozen --no-dev --no
 
 FROM python:3.12-slim-bookworm
 
+# Create non-root user for security
+RUN useradd --create-home app \
+    && mkdir -p /app \
+    && chown app:app /app
+
 WORKDIR /app
  
 COPY --from=uv /app/.venv /app/.venv
+RUN chown -R app:app /app/.venv
+
+USER app
 
 # Place executables in the environment at the front of the path
 ENV PATH="/app/.venv/bin:$PATH"
