@@ -50,6 +50,7 @@ def create_server() -> FastMCP:
     mcp.tool()(tools.list_users)
     mcp.tool()(tools.read_user)
     mcp.tool()(tools.update_user)
+    mcp.tool()(tools.delete_user)
     mcp.tool()(tools.list_members)
     mcp.tool()(tools.read_member)
     mcp.tool()(tools.create_member)
