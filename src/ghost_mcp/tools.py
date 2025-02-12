@@ -1075,6 +1075,57 @@ Updated At: {post.get('updated_at', 'Unknown')}
         if ctx:
             ctx.error(f"Failed to update post: {str(e)}")
         return str(e)
+    
+async def delete_post(post_id: str, ctx: Context = None) -> str:
+    """Delete a blog post.
+    
+    Args:
+        post_id: The ID of the post to delete
+        ctx: Optional context for logging
+        
+    Returns:
+        Success message if post was deleted
+        
+    Raises:
+        GhostError: If there is an error accessing the Ghost API or the post doesn't exist
+    """
+    if ctx:
+        ctx.info(f"Deleting post with ID: {post_id}")
+    
+    try:
+        if ctx:
+            ctx.debug("Getting auth headers")
+        headers = await get_auth_headers(STAFF_API_KEY)
+        
+        # First verify the post exists
+        if ctx:
+            ctx.debug(f"Verifying post exists: {post_id}")
+        try:
+            await make_ghost_request(f"posts/{post_id}/", headers, ctx)
+        except GhostError as e:
+            if "404" in str(e):
+                error_msg = f"Post with ID {post_id} not found"
+                if ctx:
+                    ctx.error(error_msg)
+                return error_msg
+            raise
+            
+        # Make the delete request
+        if ctx:
+            ctx.debug(f"Deleting post: {post_id}")
+        await make_ghost_request(
+            f"posts/{post_id}/",
+            headers,
+            ctx,
+            http_method="DELETE"
+        )
+        
+        return f"Successfully deleted post with ID: {post_id}"
+        
+    except GhostError as e:
+        if ctx:
+            ctx.error(f"Failed to delete post: {str(e)}")
+        return str(e)
 
 async def search_posts_by_title(query: str, exact: bool = False, ctx: Context = None) -> str:
     """Search for posts by title.

@@ -94,6 +94,10 @@ async def make_ghost_request(
                 response = await client.put(url, headers=headers, json=json_data)
             elif http_method == "POST":
                 response = await client.post(url, headers=headers, json=json_data)
+            elif http_method == "DELETE":
+                response = await client.delete(url, headers=headers)
+                if response.status_code == 204:  # Success with no content
+                    return {}  # Return empty dict for successful delete
             else:  # Default to GET
                 response = await client.get(url, headers=headers)
             response.raise_for_status()
