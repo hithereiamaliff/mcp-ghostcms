@@ -53,6 +53,8 @@ def create_server() -> FastMCP:
     mcp.tool()(tools.read_member)
     mcp.tool()(tools.list_tiers)
     mcp.tool()(tools.read_tier)
+    mcp.tool()(tools.create_tier)
+    mcp.tool()(tools.update_tier)
     mcp.tool()(tools.list_offers)
     mcp.tool()(tools.read_offer)
     mcp.tool()(tools.list_newsletters)

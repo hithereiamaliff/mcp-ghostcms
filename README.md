@@ -90,6 +90,8 @@ GHOST_API_URL=your_ghost_api_url GHOST_STAFF_API_KEY=your_staff_api_key npx @mod
 ### Tiers Management
 - `list_tiers`: List all available membership tiers
 - `read_tier`: Retrieve detailed information about a specific tier, including benefits and pricing
+- `create_tier`: Create a new membership tier with specified details
+- `update_tier`: Update an existing tier with new information
 
 ### Offers Management
 - `list_offers`: List promotional offers with relevant details
