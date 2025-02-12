@@ -2,7 +2,7 @@
 
 A Model Context Protocol (MCP) server for interacting with Ghost CMS through LLM interfaces like Claude. This server provides secure and comprehensive access to your Ghost blog, leveraging JWT authentication and a rich set of MCP tools for managing posts, users, members, tiers, offers, and newsletters.
 
-![demo](./assets/demo.gif)
+![demo](./assets/ghost-mcp-demo.gif)
 
 ## Features
 
