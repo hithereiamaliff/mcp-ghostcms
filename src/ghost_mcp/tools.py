@@ -7,6 +7,8 @@ from mcp.server.fastmcp import FastMCP, Context
 from .api import make_ghost_request, get_auth_headers
 from .config import STAFF_API_KEY
 from .exceptions import GhostError
+from datetime import datetime, timedelta
+import pytz
 
 async def read_user(user_id: str, ctx: Context = None) -> str:
     """Get the details of a specific user.
@@ -914,12 +916,12 @@ ID: {post.get('id', 'Unknown')}
         return str(e)
 
 async def update_post(post_id: str, update_data: dict, ctx: Context = None) -> str:
-    """Update a blog post using lexical content.
+    """Update a blog post with new data.
     
     Args:
         post_id: The ID of the post to update
-        update_data: Dictionary containing the lexical content and updated_at timestamp.
-                     Expected to have at least 'lexical' and 'updated_at' keys.
+        update_data: Dictionary containing the updated data and updated_at timestamp.
+                     Note: 'updated_at' is required. If 'lexical' is provided, it must be a valid JSON string.
                      The lexical content must be a properly escaped JSON string in this format:
                      {
                        "root": {
@@ -955,10 +957,50 @@ async def update_post(post_id: str, update_data: dict, ctx: Context = None) -> s
                      update_data = {
                          "post_id": "67abcffb7f82ac000179d76f",
                          "update_data": {
-                             "lexical": "{\"root\":{\"children\":[{\"children\":[{\"detail\":0,\"format\":0,\"mode\":\"normal\",\"style\":\"\",\"text\":\"Hello World\",\"type\":\"text\",\"version\":1}],\"direction\":\"ltr\",\"format\":\"\",\"indent\":0,\"type\":\"paragraph\",\"version\":1}],\"direction\":\"ltr\",\"format\":\"\",\"indent\":0,\"type\":\"root\",\"version\":1}}",
-                             "updated_at": "2025-02-11T22:54:40.000Z"
+                            "updated_at": "2025-02-11T22:54:40.000Z",
+                             "lexical": "{\"root\":{\"children\":[{\"children\":[{\"detail\":0,\"format\":0,\"mode\":\"normal\",\"style\":\"\",\"text\":\"Hello World\",\"type\":\"text\",\"version\":1}],\"direction\":\"ltr\",\"format\":\"\",\"indent\":0,\"type\":\"paragraph\",\"version\":1}],\"direction\":\"ltr\",\"format\":\"\",\"indent\":0,\"type\":\"root\",\"version\":1}}"
                          }
                      }
+                Updatable fields for a blog post:
+
+                - slug: Unique URL slug for the post.
+                - id: Identifier of the post.
+                - uuid: Universally unique identifier for the post.
+                - title: The title of the post.
+                - lexical: JSON string representing the post content in lexical format.
+                - html: HTML version of the post content.
+                - comment_id: Identifier for the comment thread.
+                - feature_image: URL to the post’s feature image.
+                - feature_image_alt: Alternate text for the feature image.
+                - feature_image_caption: Caption for the feature image.
+                - featured: Boolean flag indicating if the post is featured.
+                - status: The publication status (e.g., published, draft).
+                - visibility: Visibility setting (e.g., public, private).
+                - created_at: Timestamp when the post was created.
+                - updated_at: Timestamp when the post was last updated.
+                - published_at: Timestamp when the post was published.
+                - custom_excerpt: Custom excerpt text for the post.
+                - codeinjection_head: Code to be injected into the head section.
+                - codeinjection_foot: Code to be injected into the footer section.
+                - custom_template: Custom template assigned to the post.
+                - canonical_url: The canonical URL for SEO purposes.
+                - tags: List of tag objects associated with the post.
+                - authors: List of author objects for the post.
+                - primary_author: The primary author object.
+                - primary_tag: The primary tag object.
+                - url: Direct URL link to the post.
+                - excerpt: Short excerpt or summary of the post.
+                - og_image: Open Graph image URL for social sharing.
+                - og_title: Open Graph title for social sharing.
+                - og_description: Open Graph description for social sharing.
+                - twitter_image: Twitter-specific image URL.
+                - twitter_title: Twitter-specific title.
+                - twitter_description: Twitter-specific description.
+                - meta_title: Meta title for SEO.
+                - meta_description: Meta description for SEO.
+                - email_only: Boolean flag indicating if the post is for email distribution only.
+                - newsletter: Dictionary containing newsletter configuration details.
+                - email: Dictionary containing email details related to the post.
         ctx: Optional context for logging
         
     Returns:
@@ -970,70 +1012,51 @@ async def update_post(post_id: str, update_data: dict, ctx: Context = None) -> s
     if ctx:
         ctx.info(f"Updating post with ID: {post_id}")
     
-    if 'updated_at' not in update_data:
-        error_msg = "updated_at field is required for post updates"
-        if ctx:
-            ctx.error(error_msg)
-        return error_msg
-
-    if 'lexical' not in update_data:
-        error_msg = "lexical field is required for post updates"
-        if ctx:
-            ctx.error(error_msg)
-        return error_msg
-        
     try:
+        # First, get the current post data to obtain the correct updated_at
         if ctx:
-            ctx.debug("Getting auth headers")
+            ctx.debug("Getting current post data")
         headers = await get_auth_headers(STAFF_API_KEY)
+        current_post = await make_ghost_request(f"posts/{post_id}/", headers, ctx)
+        current_updated_at = current_post["posts"][0]["updated_at"]
         
-        # Prepare update payload with lexical content
+        # Prepare update payload
         post_update = {
             "posts": [{
                 "id": post_id,
-                "updated_at": update_data["updated_at"],
-                "lexical": update_data["lexical"]
+                "updated_at": current_updated_at  # Use the current updated_at timestamp
             }]
         }
         
-        # Optionally handle tag updates if provided
-        import copy
-        update_fields = copy.deepcopy(update_data)
-        if "tags" in update_fields:
-            tags = update_fields.pop("tags")
-            post_update["posts"][0]["tags"] = [{"name": tag} if isinstance(tag, str) else tag for tag in tags]
-        
-        # Copy any additional fields
-        for key, value in update_fields.items():
-            if key not in ["updated_at", "lexical"]:
-                post_update["posts"][0][key] = value
+        # Copy all update fields
+        for key, value in update_data.items():
+            if key != "updated_at":  # Skip updated_at from input
+                if key == "tags" and isinstance(value, list):
+                    post_update["posts"][0]["tags"] = [
+                        {"name": tag} if isinstance(tag, str) else tag 
+                        for tag in value
+                    ]
+                else:
+                    post_update["posts"][0][key] = value
         
         if ctx:
             ctx.debug(f"Update payload: {json.dumps(post_update, indent=2)}")
         
-        if ctx:
-            ctx.debug(f"Making PUT request to /posts/{post_id}/")
+        # Make the update request
         data = await make_ghost_request(
-            f"posts/{post_id}/?formats=lexical&include=tags,authors",
+            f"posts/{post_id}/",
             headers,
             ctx,
             http_method="PUT",
             json_data=post_update
         )
         
-        if ctx:
-            ctx.debug(f"API Response: {json.dumps(data, indent=2)}")
-        
+        # Process response...
         post = data["posts"][0]
         
-        # Format tags and authors for display
+        # Format response...
         tags = [tag.get('name', 'Unknown') for tag in post.get('tags', [])]
         authors = [author.get('name', 'Unknown') for author in post.get('authors', [])]
-        
-        # Get content preview (lexical content)
-        lexical_content = post.get('lexical', '')
-        content_preview = lexical_content[:200] + "..." if lexical_content else 'No content available'
-        excerpt = post.get('excerpt', 'No excerpt available')
         
         return f"""
 Post Updated Successfully:
@@ -1047,8 +1070,6 @@ Tags: {', '.join(tags) if tags else 'None'}
 Authors: {', '.join(authors) if authors else 'None'}
 Published At: {post.get('published_at', 'Not published')}
 Updated At: {post.get('updated_at', 'Unknown')}
-Content Preview: {content_preview}
-Excerpt: {excerpt}
 """
     except GhostError as e:
         if ctx:
