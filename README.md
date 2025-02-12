@@ -81,6 +81,7 @@ GHOST_API_URL=your_ghost_api_url GHOST_STAFF_API_KEY=your_staff_api_key npx @mod
 
 ### Users Management
 - `list_roles`: List all available roles
+- `create_invite`: Create a new user invitation email and role_id
 - `list_users`: List all users with detailed role information
 - `read_user`: Get comprehensive details of a specific user
 
