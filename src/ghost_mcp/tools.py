@@ -11,7 +11,8 @@ from .tools.posts import (
 )
 from .tools.users import (
     list_users,
-    read_user
+    read_user,
+    update_user
 )
 from .tools.members import (
     list_members,
@@ -49,6 +50,7 @@ __all__ = [
     'delete_post',
     'list_users',
     'read_user',
+    'update_user',
     'list_members',
     'read_member',
     'create_member',

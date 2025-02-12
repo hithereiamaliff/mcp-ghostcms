@@ -56,7 +56,7 @@ async def get_auth_headers(staff_api_key: str) -> Dict[str, str]:
     token = await generate_token(staff_api_key)
     return {
         "Authorization": f"Ghost {token}",
-        "Accept-Version": "v5"
+        "Accept-Version": "v5.109"
     }
 
 async def make_ghost_request(
