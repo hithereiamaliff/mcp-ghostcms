@@ -82,9 +82,10 @@ GHOST_API_URL=your_ghost_api_url GHOST_STAFF_API_KEY=your_staff_api_key npx @mod
 ### Users Management
 - `list_roles`: List all available roles
 - `create_invite`: Create a new user invitation email and role_id
-- `update_user`: Update an existing user's information **(Please note: Ghost has not implemented the ability to update user roles via the API even though they include it in the API documentation)**
 - `list_users`: List all users with detailed role information
 - `read_user`: Get comprehensive details of a specific user
+- `update_user`: Update an existing user's information **(Please note: Ghost has not implemented the ability to update user roles via the API even though they include it in the API documentation)**
+- `delete_user`: Delete a specific user
 
 ### Members Management
 - `list_members`: List members with subscription and newsletter details

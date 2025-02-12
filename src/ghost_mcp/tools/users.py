@@ -72,6 +72,70 @@ ID: {user.get('id', 'Unknown')}
             ctx.error(f"Failed to list users: {str(e)}")
         return str(e)
 
+async def delete_user(
+    user_id: str,
+    ctx: Context = None
+) -> str:
+    """Delete a user from Ghost.
+    
+    Args:
+        user_id: ID of the user to delete (required)
+        ctx: Optional context for logging
+    
+    Returns:
+        Success message if deletion was successful
+
+    Raises:
+        GhostError: If the Ghost API request fails or if attempting to delete the Owner
+        ValueError: If user_id is not provided
+    """
+    if not user_id:
+        raise ValueError("user_id is required")
+
+    if ctx:
+        ctx.info(f"Attempting to delete user with ID: {user_id}")
+
+    try:
+        # First get the user to check if they are the Owner
+        if ctx:
+            ctx.debug("Getting user details to check role")
+        headers = await get_auth_headers(STAFF_API_KEY)
+        
+        user_data = await make_ghost_request(
+            f"users/{user_id}/",
+            headers,
+            ctx
+        )
+        
+        user = user_data.get("users", [{}])[0]
+        roles = [role.get('name') for role in user.get('roles', [])]
+        
+        if 'Owner' in roles:
+            error_msg = "Cannot delete the Owner user"
+            if ctx:
+                ctx.error(error_msg)
+            raise GhostError(error_msg)
+        
+        # Proceed with deletion
+        if ctx:
+            ctx.debug(f"Making API request to delete user {user_id}")
+        response = await make_ghost_request(
+            f"users/{user_id}/",
+            headers,
+            ctx,
+            http_method="DELETE"
+        )
+        
+        return f"""
+Successfully deleted user:
+Name: {user.get('name', 'Unknown')}
+Email: {user.get('email', 'Unknown')}
+"""
+    except Exception as e:
+        if ctx:
+            ctx.error(f"Failed to delete user: {str(e)}")
+        raise
+
 async def update_user(
     user_id: str,
     name: str = None,
