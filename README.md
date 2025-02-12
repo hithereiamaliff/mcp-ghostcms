@@ -111,6 +111,11 @@ GHOST_API_URL=your_ghost_api_url GHOST_STAFF_API_KEY=your_staff_api_key npx @mod
 - `create_newsletter`: Create a new newsletter with specified details
 - `update_newsletter`: Update an existing newsletter with new information
 
+### Webhooks Management
+- `create_webhook`: Create a new webhook with specified details
+- `update_webhook`: Update an existing webhook with new information
+- `delete_webhook`: Delete a specific webhook
+
 ## Available Resources
 
 All resources follow the URI pattern: `[type]://[id]`

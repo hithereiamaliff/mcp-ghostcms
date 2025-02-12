@@ -41,6 +41,7 @@ from .tools.newsletters import (
 )
 from .tools.roles import list_roles
 from .tools.invites import create_invite
+from .tools.webhooks import create_webhook, update_webhook, delete_webhook
 
 __all__ = [
     'search_posts_by_title',
@@ -69,5 +70,8 @@ __all__ = [
     'create_newsletter',
     'update_newsletter',
     'list_roles',
-    'create_invite'
+    'create_invite',
+    'create_webhook',
+    'update_webhook',
+    'delete_webhook'
 ]

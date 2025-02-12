@@ -69,6 +69,9 @@ def create_server() -> FastMCP:
     mcp.tool()(tools.update_newsletter)
     mcp.tool()(tools.list_roles)
     mcp.tool()(tools.create_invite)
+    mcp.tool()(tools.create_webhook)
+    mcp.tool()(tools.update_webhook)
+    mcp.tool()(tools.delete_webhook)
     
     # Register prompts
     @mcp.prompt()

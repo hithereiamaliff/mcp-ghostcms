@@ -8,6 +8,7 @@ from .offers import list_offers, read_offer, create_offer, update_offer
 from .newsletters import list_newsletters, read_newsletter, create_newsletter, update_newsletter
 from .roles import list_roles
 from .invites import create_invite
+from .webhooks import create_webhook, update_webhook, delete_webhook
 
 __all__ = [
     'search_posts_by_title',
@@ -37,5 +38,8 @@ __all__ = [
     'create_newsletter',
     'update_newsletter',
     'list_roles',
-    'create_invite'
+    'create_invite',
+    'create_webhook',
+    'update_webhook',
+    'delete_webhook'
 ]
