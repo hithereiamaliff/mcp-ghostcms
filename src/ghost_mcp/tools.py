@@ -803,17 +803,20 @@ async def create_post(post_data: dict, ctx: Context = None) -> str:
     """Create a new blog post.
     
     Args:
-        post_data: Dictionary containing post data with at least one of these required fields:
+        post_data: Dictionary containing post data with required fields:
             - title: The title of the post 
             - lexical: The lexical content as a JSON string
-            - status: Post status ('draft' or 'published', default: 'draft')
-            Additional fields like tags, authors, etc. can also be included.
+            Additional optional fields:
+            - status: Post status ('draft' or 'published', defaults to 'draft')
+            - tags: List of tags
+            - authors: List of authors
+            - feature_image: URL of featured image
             
             Example:
             {
                 "title": "My test post",
-                "lexical": "{\"root\":{\"children\":[{\"children\":[{\"detail\":0,\"format\":0,\"mode\":\"normal\",\"style\":\"\",\"text\":\"Hello World\",\"type\":\"text\",\"version\":1}],\"direction\":\"ltr\",\"format\":\"\",\"indent\":0,\"type\":\"paragraph\",\"version\":1}],\"direction\":\"ltr\",\"format\":\"\",\"indent\":0,\"type\":\"root\",\"version\":1}}",
-                "status": "published"
+                "lexical": "{\"root\":{\"children\":[{\"children\":[{\"detail\":0,\"format\":0,\"mode\":\"normal\",\"style\":\"\",\"text\":\"Hello World\",\"type\":\"text\",\"version\":1}],\"direction\":\"ltr\",\"format\":\"\",\"indent\":0,\"type\":\"paragraph\",\"version\":1}],\"direction\":\"ltr\",\"format\":\"\",\"indent\":0,\"type\":\"root\",\"version\":1}}"
+                "status": "draft",
             }
             
         ctx: Optional context for logging
@@ -840,18 +843,29 @@ async def create_post(post_data: dict, ctx: Context = None) -> str:
         return error_msg
 
     try:
+        # Create a copy of post_data to avoid modifying the original
+        post_payload = post_data.copy()
+        
+        # Ensure status is 'draft' by default
+        if 'status' not in post_payload:
+            post_payload['status'] = 'draft'
+            if ctx:
+                ctx.debug("Setting default status to 'draft'")
+        
         if ctx:
+            ctx.debug(f"Post status: {post_payload['status']}")
             ctx.debug("Getting auth headers")
+            
         headers = await get_auth_headers(STAFF_API_KEY)
         
         # Ensure lexical is a valid JSON string if present
-        if 'lexical' in post_data:
+        if 'lexical' in post_payload:
             try:
-                if isinstance(post_data['lexical'], dict):
-                    post_data['lexical'] = json.dumps(post_data['lexical'])
+                if isinstance(post_payload['lexical'], dict):
+                    post_payload['lexical'] = json.dumps(post_payload['lexical'])
                 else:
                     # Validate the JSON string
-                    json.loads(post_data['lexical'])
+                    json.loads(post_payload['lexical'])
             except json.JSONDecodeError as e:
                 error_msg = f"Invalid JSON in lexical content: {str(e)}"
                 if ctx:
@@ -860,7 +874,7 @@ async def create_post(post_data: dict, ctx: Context = None) -> str:
 
         # Prepare post creation payload
         request_data = {
-            "posts": [post_data]
+            "posts": [post_payload]
         }
         
         if ctx:
