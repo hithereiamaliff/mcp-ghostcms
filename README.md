@@ -96,6 +96,8 @@ GHOST_API_URL=your_ghost_api_url GHOST_STAFF_API_KEY=your_staff_api_key npx @mod
 ### Offers Management
 - `list_offers`: List promotional offers with relevant details
 - `read_offer`: Get detailed information on a specific offer
+- `create_offer`: Create a new promotional offer with specified details
+- `update_offer`: Update an existing offer with new information
 
 ### Newsletters Management
 - `list_newsletters`: List all newsletters associated with the blog

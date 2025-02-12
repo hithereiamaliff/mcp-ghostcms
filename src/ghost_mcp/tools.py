@@ -25,7 +25,9 @@ from .tools.tiers import (
 )
 from .tools.offers import (
     list_offers,
-    read_offer
+    read_offer,
+    create_offer,
+    update_offer
 )
 from .tools.newsletters import (
     list_newsletters,
@@ -51,6 +53,8 @@ __all__ = [
     'update_tier',
     'list_offers',
     'read_offer',
+    'create_offer',
+    'update_offer',
     'list_newsletters',
     'read_newsletter',
     'create_newsletter',
