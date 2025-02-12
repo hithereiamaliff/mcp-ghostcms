@@ -29,7 +29,9 @@ from .tools.offers import (
 )
 from .tools.newsletters import (
     list_newsletters,
-    read_newsletter
+    read_newsletter,
+    create_newsletter,
+    update_newsletter
 )
 
 __all__ = [
@@ -50,5 +52,7 @@ __all__ = [
     'list_offers',
     'read_offer',
     'list_newsletters',
-    'read_newsletter'
+    'read_newsletter',
+    'create_newsletter',
+    'update_newsletter'
 ]

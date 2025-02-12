@@ -100,6 +100,8 @@ GHOST_API_URL=your_ghost_api_url GHOST_STAFF_API_KEY=your_staff_api_key npx @mod
 ### Newsletters Management
 - `list_newsletters`: List all newsletters associated with the blog
 - `read_newsletter`: Retrieve detailed settings and information for a specific newsletter
+- `create_newsletter`: Create a new newsletter with specified details
+- `update_newsletter`: Update an existing newsletter with new information
 
 ## Available Resources
 

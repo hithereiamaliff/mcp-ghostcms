@@ -5,7 +5,7 @@ from .users import list_users, read_user
 from .members import list_members, read_member
 from .tiers import list_tiers, read_tier, create_tier, update_tier
 from .offers import list_offers, read_offer
-from .newsletters import list_newsletters, read_newsletter
+from .newsletters import list_newsletters, read_newsletter, create_newsletter, update_newsletter
 
 __all__ = [
     'search_posts_by_title',
@@ -25,5 +25,7 @@ __all__ = [
     'list_offers',
     'read_offer',
     'list_newsletters',
-    'read_newsletter'
+    'read_newsletter',
+    'create_newsletter',
+    'update_newsletter'
 ]
