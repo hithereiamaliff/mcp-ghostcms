@@ -37,6 +37,7 @@ from .tools.newsletters import (
     create_newsletter,
     update_newsletter
 )
+from .tools.roles import list_roles
 
 __all__ = [
     'search_posts_by_title',
@@ -61,5 +62,6 @@ __all__ = [
     'list_newsletters',
     'read_newsletter',
     'create_newsletter',
-    'update_newsletter'
+    'update_newsletter',
+    'list_roles'
 ]
