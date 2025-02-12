@@ -86,6 +86,8 @@ GHOST_API_URL=your_ghost_api_url GHOST_STAFF_API_KEY=your_staff_api_key npx @mod
 ### Members Management
 - `list_members`: List members with subscription and newsletter details
 - `read_member`: Retrieve detailed information for a specific member, including subscriptions
+- `create_member`: Create a new member with specified details
+- `update_member`: Update an existing member's information
 
 ### Tiers Management
 - `list_tiers`: List all available membership tiers

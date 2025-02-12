@@ -15,7 +15,9 @@ from .tools.users import (
 )
 from .tools.members import (
     list_members,
-    read_member
+    read_member,
+    create_member,
+    update_member
 )
 from .tools.tiers import (
     list_tiers,
@@ -47,6 +49,7 @@ __all__ = [
     'read_user',
     'list_members',
     'read_member',
+    'create_member',
     'list_tiers',
     'read_tier',
     'create_tier',
