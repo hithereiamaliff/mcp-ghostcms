@@ -89,6 +89,7 @@ GHOST_API_URL=your_ghost_api_url GHOST_STAFF_API_KEY=your_staff_api_key npx @mod
 - `create_post`: Create a new post with specified content and metadata
 - `update_post`: Update a specific post with new content and metadata
 - `delete_post`: Delete a specific post
+- `batchly_update_posts`: Update multiple posts in a single request
 
 ### Tags Management
 - `browse_tags`: List all tags associated with the blog
