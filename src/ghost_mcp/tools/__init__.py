@@ -1,52 +1,54 @@
-"""Ghost MCP tools package."""
+"""Ghost MCP tools package.
 
-from .posts import search_posts_by_title, list_posts, read_post, create_post, update_post, delete_post, batchly_update_post
-from .users import list_users, read_user, update_user, delete_user
-from .members import list_members, read_member, create_member, update_member
-from .tiers import list_tiers, read_tier, create_tier, update_tier
-from .offers import list_offers, read_offer, create_offer, update_offer
-from .newsletters import list_newsletters, read_newsletter, create_newsletter, update_newsletter
-from .roles import list_roles
-from .invites import create_invite
-from .webhooks import create_webhook, update_webhook, delete_webhook
-from .tags import browse_tags, read_tag, create_tag, update_tag, delete_tag
+This module dynamically imports all tools from Python files in this directory.
+It automatically discovers and imports all non-private functions and variables,
+making them available at the package level.
 
-__all__ = [
-    'search_posts_by_title',
-    'list_posts',
-    'read_post',
-    'create_post',
-    'update_post',
-    'delete_post',
-    'batchly_update_post',
-    'list_users',
-    'read_user',
-    'update_user',
-    'delete_user',
-    'list_members',
-    'read_member',
-    'create_member',
-    'update_member',
-    'list_tiers',
-    'read_tier',
-    'create_tier',
-    'update_tier',
-    'list_offers',
-    'read_offer',
-    'create_offer',
-    'update_offer',
-    'list_newsletters',
-    'read_newsletter',
-    'create_newsletter',
-    'update_newsletter',
-    'list_roles',
-    'create_invite',
-    'create_webhook',
-    'update_webhook',
-    'delete_webhook',
-    'browse_tags',
-    'read_tag',
-    'create_tag',
-    'update_tag',
-    'delete_tag',
-]
+When adding new tools:
+1. Create new Python files in this directory
+2. Define your tools as functions in these files
+3. No need to modify this file - tools will be imported automatically
+"""
+
+from importlib import import_module
+from pathlib import Path
+from typing import Dict, Any
+
+def _import_submodules() -> Dict[str, Any]:
+    """Dynamically import all modules from the current package.
+    
+    Returns:
+        Dict mapping module names to imported module objects
+    
+    Raises:
+        FileNotFoundError: If the directory doesn't exist
+    """
+    current_dir = Path(__file__).parent
+    
+    if not current_dir.exists():
+        raise FileNotFoundError(f"Tools directory not found at: {current_dir}")
+    
+    modules: Dict[str, Any] = {}
+    for py_file in current_dir.glob('*.py'):
+        if py_file.name.startswith('__'):
+            continue
+            
+        module_name = py_file.stem
+        
+        # Import the module
+        module = import_module(f".{module_name}", package="ghost_mcp.tools")
+        modules[module_name] = module
+        
+        # Get all non-private attributes
+        for attr_name in dir(module):
+            if not attr_name.startswith('_'):
+                # Add to the current module's namespace
+                globals()[attr_name] = getattr(module, attr_name)
+    
+    return modules
+
+# Run the dynamic imports
+_import_submodules()
+
+# Create sorted __all__ from the imported attributes for consistent ordering
+__all__ = sorted(name for name in globals() if not name.startswith('_'))
