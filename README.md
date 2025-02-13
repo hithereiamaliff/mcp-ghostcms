@@ -90,6 +90,13 @@ GHOST_API_URL=your_ghost_api_url GHOST_STAFF_API_KEY=your_staff_api_key npx @mod
 - `update_post`: Update a specific post with new content and metadata
 - `delete_post`: Delete a specific post
 
+### Tags Management
+- `browse_tags`: List all tags associated with the blog
+- `read_tag`: Retrieve detailed information about a specific tag
+- `create_tag`: Create a new tag with specified details
+- `update_tag`: Update an existing tag with new information
+- `delete_tag`: Delete a specific tag
+
 ### Users Management
 - `list_roles`: List all available roles
 - `create_invite`: Create a new user invitation email and role_id
