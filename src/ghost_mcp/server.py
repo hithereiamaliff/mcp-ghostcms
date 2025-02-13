@@ -1,6 +1,7 @@
 """MCP server setup and initialization."""
 
 from mcp.server.fastmcp import FastMCP, Context
+import inspect
 from . import tools, resources
 from .config import (
     SERVER_NAME,
@@ -8,6 +9,54 @@ from .config import (
     SERVER_DESCRIPTION
 )
 from .exceptions import GhostError
+
+def register_resources(mcp: FastMCP) -> None:
+    """Register all resource handlers."""
+    resource_mappings = {
+        "user://{user_id}": resources.handle_user_resource,
+        "member://{member_id}": resources.handle_member_resource,
+        "tier://{tier_id}": resources.handle_tier_resource,
+        "offer://{offer_id}": resources.handle_offer_resource,
+        "newsletter://{newsletter_id}": resources.handle_newsletter_resource,
+        "post://{post_id}": resources.handle_post_resource,
+        "blog://info": resources.handle_blog_info
+    }
+    
+    for uri_template, handler in resource_mappings.items():
+        mcp.resource(uri_template)(handler)
+
+def register_tools(mcp: FastMCP) -> None:
+    """Register all available tools."""
+    # Get all tool functions from __all__
+    for tool_name in tools.__all__:
+        tool_func = getattr(tools, tool_name)
+        if inspect.isfunction(tool_func):
+            mcp.tool()(tool_func)
+
+def register_prompts(mcp: FastMCP) -> None:
+    """Register all prompt templates."""
+    @mcp.prompt()
+    def search_blog() -> str:
+        """Prompt template for searching blog posts"""
+        return """I want to help you search the blog posts. You can:
+1. Search by title with: search_posts_by_title("your search term")
+2. List all posts with: list_posts()
+3. Read a specific post with: read_post("post_id")
+
+What would you like to search for?"""
+
+    @mcp.prompt()
+    def create_summary(post_id: str) -> str:
+        """Create a prompt to summarize a blog post"""
+        return f"""Please read the following blog post and provide a concise summary:
+
+Resource: post://{post_id}
+
+Key points to include:
+1. Main topic/theme
+2. Key arguments or insights
+3. Important conclusions
+4. Any actionable takeaways"""
 
 def create_server() -> FastMCP:
     """Create and configure the Ghost MCP server.
@@ -32,75 +81,9 @@ def create_server() -> FastMCP:
     
     mcp.on_error = handle_error
     
-    # Register resource handlers
-    mcp.resource("user://{user_id}")(resources.handle_user_resource)
-    mcp.resource("member://{member_id}")(resources.handle_member_resource)
-    mcp.resource("tier://{tier_id}")(resources.handle_tier_resource)
-    mcp.resource("offer://{offer_id}")(resources.handle_offer_resource)
-    mcp.resource("newsletter://{newsletter_id}")(resources.handle_newsletter_resource)
-    mcp.resource("post://{post_id}")(resources.handle_post_resource)
-    mcp.resource("blog://info")(resources.handle_blog_info)
+    # Register all components
+    register_resources(mcp)
+    register_tools(mcp)
+    register_prompts(mcp)
     
-    mcp.tool()(tools.search_posts_by_title)
-    mcp.tool()(tools.list_posts)
-    mcp.tool()(tools.read_post)
-    mcp.tool()(tools.create_post)
-    mcp.tool()(tools.update_post)
-    mcp.tool()(tools.delete_post)
-    mcp.tool()(tools.batchly_update_post)
-    mcp.tool()(tools.list_users)
-    mcp.tool()(tools.read_user)
-    mcp.tool()(tools.update_user)
-    mcp.tool()(tools.delete_user)
-    mcp.tool()(tools.list_members)
-    mcp.tool()(tools.read_member)
-    mcp.tool()(tools.create_member)
-    mcp.tool()(tools.update_member)
-    mcp.tool()(tools.list_tiers)
-    mcp.tool()(tools.read_tier)
-    mcp.tool()(tools.create_tier)
-    mcp.tool()(tools.update_tier)
-    mcp.tool()(tools.list_offers)
-    mcp.tool()(tools.read_offer)
-    mcp.tool()(tools.create_offer)
-    mcp.tool()(tools.update_offer)
-    mcp.tool()(tools.list_newsletters)
-    mcp.tool()(tools.read_newsletter)
-    mcp.tool()(tools.create_newsletter)
-    mcp.tool()(tools.update_newsletter)
-    mcp.tool()(tools.list_roles)
-    mcp.tool()(tools.create_invite)
-    mcp.tool()(tools.create_webhook)
-    mcp.tool()(tools.update_webhook)
-    mcp.tool()(tools.delete_webhook)
-    mcp.tool()(tools.browse_tags)
-    mcp.tool()(tools.read_tag)
-    mcp.tool()(tools.create_tag)
-    mcp.tool()(tools.update_tag)
-    mcp.tool()(tools.delete_tag)
-    
-    # Register prompts
-    @mcp.prompt()
-    def search_blog() -> str:
-        """Prompt template for searching blog posts"""
-        return """I want to help you search the blog posts. You can:
-1. Search by title with: search_posts_by_title("your search term")
-2. List all posts with: list_posts()
-3. Read a specific post with: read_post("post_id")
-
-What would you like to search for?"""
-
-    @mcp.prompt()
-    def create_summary(post_id: str) -> str:
-        """Create a prompt to summarize a blog post"""
-        return f"""Please read the following blog post and provide a concise summary:
-
-Resource: post://{post_id}
-
-Key points to include:
-1. Main topic/theme
-2. Key arguments or insights
-3. Important conclusions
-4. Any actionable takeaways"""
-
     return mcp
