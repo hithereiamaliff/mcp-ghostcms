@@ -9,6 +9,7 @@ from .newsletters import list_newsletters, read_newsletter, create_newsletter, u
 from .roles import list_roles
 from .invites import create_invite
 from .webhooks import create_webhook, update_webhook, delete_webhook
+from .tags import browse_tags, read_tag, create_tag, update_tag, delete_tag
 
 __all__ = [
     'search_posts_by_title',
@@ -41,5 +42,10 @@ __all__ = [
     'create_invite',
     'create_webhook',
     'update_webhook',
-    'delete_webhook'
+    'delete_webhook',
+    'browse_tags',
+    'read_tag',
+    'create_tag',
+    'update_tag',
+    'delete_tag',
 ]

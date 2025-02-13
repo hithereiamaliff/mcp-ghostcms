@@ -72,6 +72,11 @@ def create_server() -> FastMCP:
     mcp.tool()(tools.create_webhook)
     mcp.tool()(tools.update_webhook)
     mcp.tool()(tools.delete_webhook)
+    mcp.tool()(tools.browse_tags)
+    mcp.tool()(tools.read_tag)
+    mcp.tool()(tools.create_tag)
+    mcp.tool()(tools.update_tag)
+    mcp.tool()(tools.delete_tag)
     
     # Register prompts
     @mcp.prompt()
