@@ -7,7 +7,8 @@ from .tools.posts import (
     read_post,
     create_post,
     update_post,
-    delete_post
+    delete_post,
+    batchly_update_post
 )
 from .tools.users import (
     list_users,
@@ -57,6 +58,7 @@ __all__ = [
     'create_post',
     'update_post',
     'delete_post',
+    'batchly_update_post',
     'list_users',
     'read_user',
     'update_user',

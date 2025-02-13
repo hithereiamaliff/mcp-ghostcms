@@ -1,6 +1,6 @@
 """Ghost MCP tools package."""
 
-from .posts import search_posts_by_title, list_posts, read_post, create_post, update_post, delete_post
+from .posts import search_posts_by_title, list_posts, read_post, create_post, update_post, delete_post, batchly_update_post
 from .users import list_users, read_user, update_user, delete_user
 from .members import list_members, read_member, create_member, update_member
 from .tiers import list_tiers, read_tier, create_tier, update_tier
@@ -18,6 +18,7 @@ __all__ = [
     'create_post',
     'update_post',
     'delete_post',
+    'batchly_update_post',
     'list_users',
     'read_user',
     'update_user',

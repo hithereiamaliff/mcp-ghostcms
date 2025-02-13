@@ -47,6 +47,7 @@ def create_server() -> FastMCP:
     mcp.tool()(tools.create_post)
     mcp.tool()(tools.update_post)
     mcp.tool()(tools.delete_post)
+    mcp.tool()(tools.batchly_update_post)
     mcp.tool()(tools.list_users)
     mcp.tool()(tools.read_user)
     mcp.tool()(tools.update_user)

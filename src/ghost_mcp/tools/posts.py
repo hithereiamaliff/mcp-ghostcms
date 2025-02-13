@@ -543,6 +543,197 @@ Updated At: {post.get('updated_at', 'Unknown')}
             ctx.error(f"Failed to update post: {str(e)}")
         return str(e)
 
+async def batchly_update_post(filter_criteria: dict, update_data: dict, ctx: Context = None) -> str:
+    """Update multiple blog posts that match the filter criteria.
+    
+    Args:
+        filter_criteria: Dictionary containing fields to filter posts by, example:
+            {
+                "status": "draft",
+                "tag": "news",
+                "featured": True
+            }
+            Supported filter fields:
+            - status: Post status (draft, published, etc)
+            - tag: Filter by tag name
+            - author: Filter by author name
+            - featured: Boolean to filter featured posts
+            - visibility: Post visibility (public, members, paid)
+            
+        update_data: Dictionary containing the fields to update. The updated_at field is required.
+                    All fields supported by the Ghost API can be updated:
+                    - slug: Unique URL slug for the post
+                    - title: The title of the post
+                    - lexical: JSON string representing the post content in lexical format
+                    - html: HTML version of the post content
+                    - comment_id: Identifier for the comment thread
+                    - feature_image: URL to the post's feature image
+                    - feature_image_alt: Alternate text for the feature image
+                    - feature_image_caption: Caption for the feature image
+                    - featured: Boolean flag indicating if the post is featured
+                    - status: The publication status (e.g., published, draft)
+                    - visibility: Visibility setting (e.g., public, private)
+                    - created_at: Timestamp when the post was created
+                    - updated_at: Timestamp when the post was last updated (REQUIRED)
+                    - published_at: Timestamp when the post was published
+                    - custom_excerpt: Custom excerpt text for the post
+                    - codeinjection_head: Code to be injected into the head section
+                    - codeinjection_foot: Code to be injected into the footer section
+                    - custom_template: Custom template assigned to the post
+                    - canonical_url: The canonical URL for SEO purposes
+                    - tags: List of tag objects associated with the post
+                    - authors: List of author objects for the post
+                    - primary_author: The primary author object
+                    - primary_tag: The primary tag object
+                    - og_image: Open Graph image URL for social sharing
+                    - og_title: Open Graph title for social sharing
+                    - og_description: Open Graph description for social sharing
+                    - twitter_image: Twitter-specific image URL
+                    - twitter_title: Twitter-specific title
+                    - twitter_description: Twitter-specific description
+                    - meta_title: Meta title for SEO
+                    - meta_description: Meta description for SEO
+                    - email_only: Boolean flag indicating if the post is for email distribution only
+                    - newsletter: Dictionary containing newsletter configuration details
+                    - email: Dictionary containing email details related to the post
+
+                    Example:
+                    {
+                        "updated_at": "2025-02-11T22:54:40.000Z",
+                        "status": "published",
+                        "featured": True,
+                        "tags": [{"name": "news"}, {"name": "featured"}],
+                        "meta_title": "My Updated Title",
+                        "og_description": "New social sharing description"
+                    }
+        ctx: Optional context for logging
+        
+    Returns:
+        Formatted string containing summary of updated posts
+        
+    Raises:
+        GhostError: If there is an error accessing the Ghost API or missing required fields
+    """
+    if ctx:
+        ctx.info(f"Batch updating posts with filter: {filter_criteria}")
+    
+    try:
+        if ctx:
+            ctx.debug("Getting auth headers")
+        headers = await get_auth_headers(STAFF_API_KEY)
+        
+        # First get all posts
+        if ctx:
+            ctx.debug("Getting all posts to filter")
+        data = await make_ghost_request("posts/?limit=all&include=tags,authors", headers, ctx)
+        
+        posts = data.get("posts", [])
+        if not posts:
+            return "No posts found to update."
+            
+        # Filter posts based on criteria
+        filtered_posts = []
+        for post in posts:
+            matches = True
+            for key, value in filter_criteria.items():
+                if key == "tag":
+                    post_tags = [tag.get("name") for tag in post.get("tags", [])]
+                    if value not in post_tags:
+                        matches = False
+                        break
+                elif key == "author":
+                    post_authors = [author.get("name") for author in post.get("authors", [])]
+                    if value not in post_authors:
+                        matches = False
+                        break
+                elif key in post:
+                    if post[key] != value:
+                        matches = False
+                        break
+            if matches:
+                filtered_posts.append(post)
+        
+        if not filtered_posts:
+            return f"No posts found matching filter criteria: {filter_criteria}"
+            
+        # Update each matching post
+        updated_count = 0
+        failed_count = 0
+        failed_posts = []
+        
+        for post in filtered_posts:
+            try:
+                post_update = {
+                    "posts": [{
+                        "id": post["id"],
+                        "updated_at": post["updated_at"]  # Use current post's updated_at
+                    }]
+                }
+                
+                # Copy all update fields except updated_at
+                for key, value in update_data.items():
+                    if key != "updated_at":
+                        if key == "tags" and isinstance(value, list):
+                            post_update["posts"][0]["tags"] = [
+                                {"name": tag} if isinstance(tag, str) else tag 
+                                for tag in value
+                            ]
+                        elif key == "authors" and isinstance(value, list):
+                            post_update["posts"][0]["authors"] = [
+                                {"name": author} if isinstance(author, str) else author 
+                                for author in value
+                            ]
+                        else:
+                            post_update["posts"][0][key] = value
+                
+                # Validate lexical JSON if present
+                if "lexical" in update_data:
+                    try:
+                        if isinstance(update_data["lexical"], dict):
+                            post_update["posts"][0]["lexical"] = json.dumps(update_data["lexical"])
+                        else:
+                            json.loads(update_data["lexical"])  # Validate JSON string
+                    except json.JSONDecodeError as e:
+                        raise GhostError(f"Invalid JSON in lexical content: {str(e)}")
+                
+                await make_ghost_request(
+                    f"posts/{post['id']}/",
+                    headers,
+                    ctx,
+                    http_method="PUT",
+                    json_data=post_update
+                )
+                updated_count += 1
+                
+            except GhostError as e:
+                if ctx:
+                    ctx.error(f"Failed to update post {post['id']}: {str(e)}")
+                failed_count += 1
+                failed_posts.append({
+                    "id": post["id"],
+                    "title": post.get("title", "Unknown"),
+                    "error": str(e)
+                })
+        
+        summary = f"""
+Batch Update Summary:
+Total matching posts: {len(filtered_posts)}
+Successfully updated: {updated_count}
+Failed to update: {failed_count}
+Filter criteria used: {json.dumps(filter_criteria, indent=2)}
+Fields updated: {json.dumps({k:v for k,v in update_data.items() if k != 'updated_at'}, indent=2)}
+"""
+        
+        if failed_posts:
+            summary += "\nFailed Posts:\n" + json.dumps(failed_posts, indent=2)
+            
+        return summary
+        
+    except GhostError as e:
+        if ctx:
+            ctx.error(f"Failed to batch update posts: {str(e)}")
+        return str(e)
+
 async def delete_post(post_id: str, ctx: Context = None) -> str:
     """Delete a blog post.
     
