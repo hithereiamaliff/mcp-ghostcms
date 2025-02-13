@@ -2,11 +2,11 @@
 
 [![smithery badge](https://smithery.ai/badge/@MFYDev/ghost-mcp)](https://smithery.ai/server/@MFYDev/ghost-mcp)
 
+<a href="https://glama.ai/mcp/servers/vor63xn7ky"><img width="380" height="200" src="https://glama.ai/mcp/servers/vor63xn7ky/badge" alt="Ghost Server MCP server" /></a>
+
 A Model Context Protocol (MCP) server for interacting with Ghost CMS through LLM interfaces like Claude. This server provides secure and comprehensive access to your Ghost blog, leveraging JWT authentication and a rich set of MCP tools for managing posts, users, members, tiers, offers, and newsletters.
 
 ![demo](./assets/ghost-mcp-demo.gif)
-
-<a href="https://glama.ai/mcp/servers/vor63xn7ky"><img width="380" height="200" src="https://glama.ai/mcp/servers/vor63xn7ky/badge" alt="Ghost Server MCP server" /></a>
 
 ## Features
 
