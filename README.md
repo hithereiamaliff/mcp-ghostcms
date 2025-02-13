@@ -6,6 +6,8 @@ A Model Context Protocol (MCP) server for interacting with Ghost CMS through LLM
 
 ![demo](./assets/ghost-mcp-demo.gif)
 
+<a href="https://glama.ai/mcp/servers/vor63xn7ky"><img width="380" height="200" src="https://glama.ai/mcp/servers/vor63xn7ky/badge" alt="Ghost Server MCP server" /></a>
+
 ## Features
 
 - Secure JWT Authentication for Ghost Admin API requests
