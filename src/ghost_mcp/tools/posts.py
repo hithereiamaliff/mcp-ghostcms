@@ -543,7 +543,7 @@ Updated At: {post.get('updated_at', 'Unknown')}
             ctx.error(f"Failed to update post: {str(e)}")
         return str(e)
 
-async def batchly_update_post(filter_criteria: dict, update_data: dict, ctx: Context = None) -> str:
+async def batchly_update_posts(filter_criteria: dict, update_data: dict, ctx: Context = None) -> str:
     """Update multiple blog posts that match the filter criteria.
     
     Args:
