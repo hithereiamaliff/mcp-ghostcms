@@ -54,8 +54,8 @@ GHOST_API_URL=https://yourblog.com  # Your Ghost Admin API URL
 GHOST_STAFF_API_KEY=your_staff_api_key                 # Your Ghost Staff API key
 ```
 
-### Usage with Claude Desktop
-To use this with Claude Desktop, add the following to your `claude_desktop_config.json`:
+### Usage with MCP Clients
+To use this with MCP clients, for instance, Claude Desktop, add the following to your `claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
