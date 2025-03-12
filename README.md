@@ -84,56 +84,89 @@ GHOST_API_URL=your_ghost_api_url GHOST_STAFF_API_KEY=your_staff_api_key npx @mod
 
 ## Available Tools
 
-### Posts Management
-- `list_posts`: List blog posts with pagination (supports both text and JSON formats)
-- `search_posts_by_title`: Search for posts by title using exact or fuzzy matching
-- `read_post`: Retrieve full content of a specific post in HTML or plaintext formats
-- `create_post`: Create a new post with specified content and metadata
-- `update_post`: Update a specific post with new content and metadata
+Ghost MCP now provides a single unified tool that provides access to all Ghost CMS functionality:
+
+### Main Tool
+- `ghost`: Central tool for accessing all Ghost CMS functionality
+
+### Using the Ghost Tool
+
+The ghost tool accepts two main parameters:
+1. `action`: The specific Ghost operation to perform
+2. `params`: A dictionary of parameters for the specified action
+
+Example usage:
+```python
+# List posts
+ghost(action="list_posts", params={"format": "text", "page": 1, "limit": 15})
+
+# Search posts by title
+ghost(action="search_posts_by_title", params={"query": "Welcome", "exact": False})
+
+# Create a post
+ghost(action="create_post", params={
+    "post_data": {
+        "title": "New Post via MCP",
+        "status": "draft",
+        "lexical": "{\"root\":{\"children\":[{\"children\":[{\"detail\":0,\"format\":0,\"mode\":\"normal\",\"style\":\"\",\"text\":\"Hello World\",\"type\":\"text\",\"version\":1}],\"direction\":\"ltr\",\"format\":\"\",\"indent\":0,\"type\":\"paragraph\",\"version\":1}],\"direction\":\"ltr\",\"format\":\"\",\"indent\":0,\"type\":\"root\",\"version\":1}}"
+    }
+})
+```
+
+### Available Actions
+
+The ghost tool supports all the same actions as before, but now through a unified interface:
+
+#### Posts Actions
+- `list_posts`: List blog posts with pagination
+- `search_posts_by_title`: Search for posts by title
+- `read_post`: Retrieve full content of a specific post
+- `create_post`: Create a new post
+- `update_post`: Update a specific post
 - `delete_post`: Delete a specific post
 - `batchly_update_posts`: Update multiple posts in a single request
 
-### Tags Management
-- `browse_tags`: List all tags associated with the blog
-- `read_tag`: Retrieve detailed information about a specific tag
-- `create_tag`: Create a new tag with specified details
-- `update_tag`: Update an existing tag with new information
+#### Tags Actions
+- `browse_tags`: List all tags
+- `read_tag`: Retrieve specific tag information
+- `create_tag`: Create a new tag
+- `update_tag`: Update an existing tag
 - `delete_tag`: Delete a specific tag
 
-### Users Management
+#### Users Actions
 - `list_roles`: List all available roles
-- `create_invite`: Create a new user invitation email and role_id
-- `list_users`: List all users with detailed role information
-- `read_user`: Get comprehensive details of a specific user
+- `create_invite`: Create a new user invitation
+- `list_users`: List all users
+- `read_user`: Get details of a specific user
 - `delete_user`: Delete a specific user
 
-### Members Management
-- `list_members`: List members with subscription and newsletter details
-- `read_member`: Retrieve detailed information for a specific member, including subscriptions
-- `create_member`: Create a new member with specified details
-- `update_member`: Update an existing member's information
+#### Members Actions
+- `list_members`: List members
+- `read_member`: Retrieve specific member information
+- `create_member`: Create a new member
+- `update_member`: Update an existing member
 
-### Tiers Management
-- `list_tiers`: List all available membership tiers
-- `read_tier`: Retrieve detailed information about a specific tier, including benefits and pricing
-- `create_tier`: Create a new membership tier with specified details
-- `update_tier`: Update an existing tier with new information
+#### Tiers Actions
+- `list_tiers`: List all membership tiers
+- `read_tier`: Retrieve specific tier information
+- `create_tier`: Create a new tier
+- `update_tier`: Update an existing tier
 
-### Offers Management
-- `list_offers`: List promotional offers with relevant details
-- `read_offer`: Get detailed information on a specific offer
-- `create_offer`: Create a new promotional offer with specified details
-- `update_offer`: Update an existing offer with new information
+#### Offers Actions
+- `list_offers`: List promotional offers
+- `read_offer`: Get specific offer information
+- `create_offer`: Create a new offer
+- `update_offer`: Update an existing offer
 
-### Newsletters Management
-- `list_newsletters`: List all newsletters associated with the blog
-- `read_newsletter`: Retrieve detailed settings and information for a specific newsletter
-- `create_newsletter`: Create a new newsletter with specified details
-- `update_newsletter`: Update an existing newsletter with new information
+#### Newsletters Actions
+- `list_newsletters`: List all newsletters
+- `read_newsletter`: Retrieve specific newsletter information
+- `create_newsletter`: Create a new newsletter
+- `update_newsletter`: Update an existing newsletter
 
-### Webhooks Management
-- `create_webhook`: Create a new webhook with specified details
-- `update_webhook`: Update an existing webhook with new information
+#### Webhooks Actions
+- `create_webhook`: Create a new webhook
+- `update_webhook`: Update an existing webhook
 - `delete_webhook`: Delete a specific webhook
 
 ## Available Resources
