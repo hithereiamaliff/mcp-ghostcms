@@ -26,12 +26,9 @@ def register_resources(mcp: FastMCP) -> None:
         mcp.resource(uri_template)(handler)
 
 def register_tools(mcp: FastMCP) -> None:
-    """Register all available tools."""
-    # Get all tool functions from __all__
-    for tool_name in tools.__all__:
-        tool_func = getattr(tools, tool_name)
-        if inspect.isfunction(tool_func):
-            mcp.tool()(tool_func)
+    """Register only the main ghost tool (which provides access to all functionality)."""
+    # Register only the main ghost tool
+    mcp.tool()(tools.ghost)
 
 def register_prompts(mcp: FastMCP) -> None:
     """Register all prompt templates."""
@@ -39,9 +36,9 @@ def register_prompts(mcp: FastMCP) -> None:
     def search_blog() -> str:
         """Prompt template for searching blog posts"""
         return """I want to help you search the blog posts. You can:
-1. Search by title with: search_posts_by_title("your search term")
-2. List all posts with: list_posts()
-3. Read a specific post with: read_post("post_id")
+1. Search by title with: ghost(action="search_posts_by_title", params={"query": "your search term"})
+2. List all posts with: ghost(action="list_posts")
+3. Read a specific post with: ghost(action="read_post", params={"post_id": "post_id"})
 
 What would you like to search for?"""
 
@@ -52,7 +49,10 @@ What would you like to search for?"""
 
 Resource: post://{post_id}
 
-Key points to include:
+Alternatively, you can also get the post content with:
+ghost(action="read_post", params={{"post_id": "{post_id}"}})
+
+Key points to include in your summary:
 1. Main topic/theme
 2. Key arguments or insights
 3. Important conclusions
