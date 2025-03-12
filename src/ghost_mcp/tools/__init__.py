@@ -16,29 +16,31 @@ from .tags import browse_tags, read_tag, create_tag, update_tag, delete_tag
 from .tiers import list_tiers, read_tier, create_tier, update_tier
 from .users import list_users, read_user, delete_user
 from .webhooks import create_webhook, update_webhook, delete_webhook
+from .ghost import ghost
 
-__all__ = [
+# Hidden tools - these are accessible through the ghost meta-tool but not exposed directly
+_all_tools = [
     # Invites
     "create_invite",
-    
+
     # Members
     "list_members",
     "read_member",
     "create_member",
     "update_member",
-    
+
     # Newsletters
     "list_newsletters",
     "read_newsletter",
     "create_newsletter",
     "update_newsletter",
-    
+
     # Offers
     "list_offers",
     "read_offer",
     "create_offer",
     "update_offer",
-    
+
     # Posts
     "list_posts",
     "search_posts_by_title",
@@ -47,30 +49,33 @@ __all__ = [
     "update_post",
     "delete_post",
     "batchly_update_posts",
-    
+
     # Roles
     "list_roles",
-    
+
     # Tags
     "browse_tags",
     "read_tag",
     "create_tag",
     "update_tag",
     "delete_tag",
-    
+
     # Tiers
     "list_tiers",
     "read_tier",
     "create_tier",
     "update_tier",
-    
+
     # Users
     "list_users",
     "read_user",
     "delete_user",
-    
+
     # Webhooks
     "create_webhook",
     "update_webhook",
     "delete_webhook",
 ]
+
+# Only expose the ghost meta-tool publicly
+__all__ = ["ghost"]
