@@ -1,185 +1,122 @@
 # Ghost MCP Server
 
-[![smithery badge](https://smithery.ai/badge/@MFYDev/ghost-mcp)](https://smithery.ai/server/@MFYDev/ghost-mcp)
-
-<a href="https://glama.ai/mcp/servers/vor63xn7ky"><img width="380" height="200" src="https://glama.ai/mcp/servers/vor63xn7ky/badge" alt="Ghost Server MCP server" /></a>
-
 A Model Context Protocol (MCP) server for interacting with Ghost CMS through LLM interfaces like Claude. This server provides secure and comprehensive access to your Ghost blog, leveraging JWT authentication and a rich set of MCP tools for managing posts, users, members, tiers, offers, and newsletters.
 
 ![demo](./assets/ghost-mcp-demo.gif)
 
 ## Features
 
-- Secure JWT Authentication for Ghost Admin API requests
+- Secure Ghost Admin API requests with `@tryghost/admin-api`
 - Comprehensive entity access including posts, users, members, tiers, offers, and newsletters
 - Advanced search functionality with both fuzzy and exact matching options
 - Detailed, human-readable output for Ghost entities
 - Robust error handling using custom `GhostError` exceptions
 - Integrated logging support via MCP context for enhanced troubleshooting
 
-## Installation
-
-### Installing via Smithery
-
-To install Ghost MCP Server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@MFYDev/ghost-mcp):
-
-```bash
-npx -y @smithery/cli install @MFYDev/ghost-mcp --client claude
-```
-
-### Manual Installation
-```bash
-# Clone repository
-git clone git@github.com/mfydev/ghost-mcp.git
-cd ghost-mcp
-
-# Create virtual environment and install
-uv venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-uv pip install -e .
-```
-
-## Requirements
-
-- Python ≥ 3.12
-- Running Ghost instance with Admin API access (v5.x+ recommended)
-- Node.js (for testing with MCP Inspector)
-
 ## Usage
 
-### Environment Variables
-
-```bash
-GHOST_API_URL=https://yourblog.com  # Your Ghost Admin API URL
-GHOST_STAFF_API_KEY=your_staff_api_key                 # Your Ghost Staff API key
-```
-
-### Usage with MCP Clients
 To use this with MCP clients, for instance, Claude Desktop, add the following to your `claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
-    "ghost": {
-      "command": "/Users/username/.local/bin/uv",
-      "args": [
-        "--directory",
-        "/path/to/ghost-mcp",
-        "run",
-        "src/main.py"
-      ],
-      "env": {
-        "GHOST_API_URL": "your_ghost_api_url",
-        "GHOST_STAFF_API_KEY": "your_staff_api_key"
+      "ghost-mcp-ts": {
+        "command": "node",
+        "args": [
+            "ABSOLUTE_PATH_TO_GHOST_MCP_SERVER/build/server.js",
+        ],
+        "env": {
+            "GHOST_API_URL": "https://yourblog.com",
+            "GHOST_ADMIN_API_KEY": "your_admin_api_key",
+            "GHOST_API_VERSION": "v5.0"
+        }
       }
     }
-  }
 }
 ```
 
-### Testing with MCP Inspector
+## Available Resources
 
-```bash
-GHOST_API_URL=your_ghost_api_url GHOST_STAFF_API_KEY=your_staff_api_key npx @modelcontextprotocol/inspector uv --directory /path/to/ghost-mcp run src/main.py
-```
+The following Ghost CMS resources are available through this MCP server:
+
+- **Posts**: Articles and content published on your Ghost site.
+- **Members**: Registered users and subscribers of your site.
+- **Newsletters**: Email newsletters managed and sent via Ghost.
+- **Offers**: Promotional offers and discounts for members.
+- **Invites**: Invitations for new users or staff to join your Ghost site.
+- **Roles**: User roles and permissions within the Ghost admin.
+- **Tags**: Organizational tags for posts and content.
+- **Tiers**: Subscription tiers and plans for members.
+- **Users**: Admin users and staff accounts.
+- **Webhooks**: Automated event notifications to external services.
 
 ## Available Tools
 
-Ghost MCP now provides a single unified tool that provides access to all Ghost CMS functionality:
+This MCP server exposes a comprehensive set of tools for managing your Ghost CMS via the Model Context Protocol. Each resource provides a set of operations, typically including browsing, reading, creating, editing, and deleting entities. Below is a summary of the available tools:
 
-### Main Tool
-- `ghost`: Central tool for accessing all Ghost CMS functionality
+### Posts
+- **Browse Posts**: List posts with optional filters, pagination, and ordering.
+- **Read Post**: Retrieve a post by ID or slug.
+- **Add Post**: Create a new post with title, content, and status.
+- **Edit Post**: Update an existing post by ID.
+- **Delete Post**: Remove a post by ID.
 
-### Using the Ghost Tool
+### Members
+- **Browse Members**: List members with filters and pagination.
+- **Read Member**: Retrieve a member by ID or email.
+- **Add Member**: Create a new member.
+- **Edit Member**: Update member details.
+- **Delete Member**: Remove a member.
 
-The ghost tool accepts two main parameters:
-1. `action`: The specific Ghost operation to perform
-2. `params`: A dictionary of parameters for the specified action
+### Newsletters
+- **Browse Newsletters**: List newsletters.
+- **Read Newsletter**: Retrieve a newsletter by ID.
+- **Add Newsletter**: Create a new newsletter.
+- **Edit Newsletter**: Update newsletter details.
+- **Delete Newsletter**: Remove a newsletter.
 
-Example usage:
-```python
-# List posts
-ghost(action="list_posts", params={"format": "text", "page": 1, "limit": 15})
+### Offers
+- **Browse Offers**: List offers.
+- **Read Offer**: Retrieve an offer by ID.
+- **Add Offer**: Create a new offer.
+- **Edit Offer**: Update offer details.
+- **Delete Offer**: Remove an offer.
 
-# Search posts by title
-ghost(action="search_posts_by_title", params={"query": "Welcome", "exact": False})
+### Invites
+- **Browse Invites**: List invites.
+- **Add Invite**: Create a new invite.
+- **Delete Invite**: Remove an invite.
 
-# Create a post
-ghost(action="create_post", params={
-    "post_data": {
-        "title": "New Post via MCP",
-        "status": "draft",
-        "lexical": "{\"root\":{\"children\":[{\"children\":[{\"detail\":0,\"format\":0,\"mode\":\"normal\",\"style\":\"\",\"text\":\"Hello World\",\"type\":\"text\",\"version\":1}],\"direction\":\"ltr\",\"format\":\"\",\"indent\":0,\"type\":\"paragraph\",\"version\":1}],\"direction\":\"ltr\",\"format\":\"\",\"indent\":0,\"type\":\"root\",\"version\":1}}"
-    }
-})
-```
+### Roles
+- **Browse Roles**: List roles.
+- **Read Role**: Retrieve a role by ID.
 
-### Available Actions
+### Tags
+- **Browse Tags**: List tags.
+- **Read Tag**: Retrieve a tag by ID or slug.
+- **Add Tag**: Create a new tag.
+- **Edit Tag**: Update tag details.
+- **Delete Tag**: Remove a tag.
 
-The ghost tool supports all the same actions as before, but now through a unified interface:
+### Tiers
+- **Browse Tiers**: List tiers.
+- **Read Tier**: Retrieve a tier by ID.
+- **Add Tier**: Create a new tier.
+- **Edit Tier**: Update tier details.
+- **Delete Tier**: Remove a tier.
 
-#### Posts Actions
-- `list_posts`: List blog posts with pagination
-- `search_posts_by_title`: Search for posts by title
-- `read_post`: Retrieve full content of a specific post
-- `create_post`: Create a new post
-- `update_post`: Update a specific post
-- `delete_post`: Delete a specific post
-- `batchly_update_posts`: Update multiple posts in a single request
+### Users
+- **Browse Users**: List users.
+- **Read User**: Retrieve a user by ID or slug.
+- **Edit User**: Update user details.
+- **Delete User**: Remove a user.
 
-#### Tags Actions
-- `browse_tags`: List all tags
-- `read_tag`: Retrieve specific tag information
-- `create_tag`: Create a new tag
-- `update_tag`: Update an existing tag
-- `delete_tag`: Delete a specific tag
+### Webhooks
+- **Browse Webhooks**: List webhooks.
+- **Add Webhook**: Create a new webhook.
+- **Delete Webhook**: Remove a webhook.
 
-#### Users Actions
-- `list_roles`: List all available roles
-- `create_invite`: Create a new user invitation
-- `list_users`: List all users
-- `read_user`: Get details of a specific user
-- `delete_user`: Delete a specific user
+> Each tool is accessible via the MCP protocol and can be invoked from compatible clients. For detailed parameter schemas and usage, see the source code in `src/tools/`.
 
-#### Members Actions
-- `list_members`: List members
-- `read_member`: Retrieve specific member information
-- `create_member`: Create a new member
-- `update_member`: Update an existing member
-
-#### Tiers Actions
-- `list_tiers`: List all membership tiers
-- `read_tier`: Retrieve specific tier information
-- `create_tier`: Create a new tier
-- `update_tier`: Update an existing tier
-
-#### Offers Actions
-- `list_offers`: List promotional offers
-- `read_offer`: Get specific offer information
-- `create_offer`: Create a new offer
-- `update_offer`: Update an existing offer
-
-#### Newsletters Actions
-- `list_newsletters`: List all newsletters
-- `read_newsletter`: Retrieve specific newsletter information
-- `create_newsletter`: Create a new newsletter
-- `update_newsletter`: Update an existing newsletter
-
-#### Webhooks Actions
-- `create_webhook`: Create a new webhook
-- `update_webhook`: Update an existing webhook
-- `delete_webhook`: Delete a specific webhook
-
-## Available Resources
-
-All resources follow the URI pattern: `[type]://[id]`
-
-- `user://{user_id}`: User profiles and roles
-- `member://{member_id}`: Member details and subscriptions
-- `tier://{tier_id}`: Tier configurations
-- `offer://{offer_id}`: Offer details
-- `newsletter://{newsletter_id}`: Newsletter settings
-- `post://{post_id}`: Post content and metadata
-- `blog://info`: General blog information
 
 ## Error Handling
 
