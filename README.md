@@ -1,5 +1,24 @@
 # Ghost MCP Server
 
+## ‼️ Important Notice: Python to TypeScript Migration
+I've completely rewritten the Ghost MCP Server from Python to TypeScript in this v0.1.0 release. This major change brings several benefits:
+
+- Simplified installation: Now available as an NPM package (@fanyangmeng/ghost-mcp)
+- Improved reliability: Uses the official @tryghost/admin-api client instead of custom implementation
+- Better maintainability: TypeScript provides type safety and better code organization
+- Streamlined configuration: Simple environment variable setup
+
+### Breaking Changes
+
+- Python dependencies are no longer required
+- Configuration method has changed (now using Node.js environment variables)
+- Docker deployment has been simplified
+- Different installation process (now using NPM)
+
+Please see the below updated documentation for details on migrating from the Python version. If you encounter any issues, feel free to open an issue on GitHub.
+
+---
+
 A Model Context Protocol (MCP) server for interacting with Ghost CMS through LLM interfaces like Claude. This server provides secure and comprehensive access to your Ghost blog, leveraging JWT authentication and a rich set of MCP tools for managing posts, users, members, tiers, offers, and newsletters.
 
 ![demo](./assets/ghost-mcp-demo.gif)
