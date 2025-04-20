@@ -19,11 +19,9 @@ To use this with MCP clients, for instance, Claude Desktop, add the following to
 ```json
 {
   "mcpServers": {
-      "ghost-mcp-ts": {
-        "command": "node",
-        "args": [
-            "ABSOLUTE_PATH_TO_GHOST_MCP_SERVER/build/server.js",
-        ],
+      "ghost-mcp": {
+        "command": "npx",
+        "args": ["-y", "@fanyangmeng/ghost-mcp"],
         "env": {
             "GHOST_API_URL": "https://yourblog.com",
             "GHOST_ADMIN_API_KEY": "your_admin_api_key",

@@ -1,12 +1,22 @@
 {
     "name": "@fanyangmeng/ghost-mcp",
-    "version": "0.0.1",
+    "version": "0.1.0",
     "description": "MCP server for using the Ghost API",
-    "main": "index.js",
+    "main": "build/server.js",
+    "bin": {
+        "ghost-mcp": "build/server.js"
+    },
+    "files": [
+        "build/"
+    ],
     "scripts": {
         "build": "tsc",
         "start": "node build/server.js",
+        "prepare": "npm run build",
         "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "publishConfig": {
+        "access": "public"
     },
     "keywords": [],
     "author": "Fanyang Meng (https://mfydev.link)",
