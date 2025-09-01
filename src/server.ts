@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
+// Use ESM imports for MCP SDK subpaths (package exports only expose subpaths)
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { ghostApiClient } from './ghostApi'; // Import the initialized Ghost API client
+import { initGhostApi } from './ghostApi.js';
 import {
     handleUserResource,
     handleMemberResource,
@@ -11,64 +11,75 @@ import {
     handleNewsletterResource,
     handlePostResource,
     handleBlogInfoResource
-} from './resources'; // Import resource handlers
+} from './resources.js';
+import { configSchema, ConfigType } from './configSchema.js';
+import { registerPostTools } from "./tools/posts.js";
+import { registerMemberTools } from "./tools/members.js";
+import { registerUserTools } from "./tools/users.js";
+import { registerTagTools } from "./tools/tags.js";
+import { registerTierTools } from "./tools/tiers.js";
+import { registerOfferTools } from "./tools/offers.js";
+import { registerNewsletterTools } from "./tools/newsletters.js";
+import { registerInviteTools } from "./tools/invites.js";
+import { registerRoleTools } from "./tools/roles.js";
+import { registerWebhookTools } from "./tools/webhooks.js";
+import { registerPrompts } from "./prompts.js";
+import { registerDebugTools } from "./tools/debug.js";
 
-// Create an MCP server instance
-const server = new McpServer({
-    name: "ghost-mcp-ts",
-    version: "1.0.0", // TODO: Get version from package.json
-    capabilities: {
-        resources: {}, // Capabilities will be enabled as handlers are registered
-        tools: {},
-        prompts: {},
-        logging: {} // Enable logging capability
-    }
-});
+// Export the configuration schema for Smithery
+export { configSchema };
 
-// Register resource handlers
-server.resource("user", new ResourceTemplate("user://{user_id}", { list: undefined }), handleUserResource);
-server.resource("member", new ResourceTemplate("member://{member_id}", { list: undefined }), handleMemberResource);
-server.resource("tier", new ResourceTemplate("tier://{tier_id}", { list: undefined }), handleTierResource);
-server.resource("offer", new ResourceTemplate("offer://{offer_id}", { list: undefined }), handleOfferResource);
-server.resource("newsletter", new ResourceTemplate("newsletter://{newsletter_id}", { list: undefined }), handleNewsletterResource);
-server.resource("post", new ResourceTemplate("post://{post_id}", { list: undefined }), handlePostResource);
-server.resource("blog-info", "blog://info", handleBlogInfoResource);
+/**
+ * Create and configure the MCP server with HTTP transport
+ * This is the main entry point for Smithery
+ */
+export default function createServer({ config }: { config: ConfigType }) {
+    // Initialize Ghost API client with Smithery-provided runtime config
+    initGhostApi({
+        url: config.GHOST_API_URL,
+        key: config.GHOST_ADMIN_API_KEY,
+        version: config.GHOST_API_VERSION,
+    });
+    const keyId = (config.GHOST_ADMIN_API_KEY || '').split(':')[0] || 'unknown';
+    console.log(`[ghost-mcp] Using Ghost Admin API: url=${config.GHOST_API_URL}, version=${config.GHOST_API_VERSION}, keyId=${keyId}`);
 
-// Register tools
-import { registerPostTools } from "./tools/posts";
-import { registerMemberTools } from "./tools/members";
-registerPostTools(server);
-registerMemberTools(server);
-import { registerUserTools } from "./tools/users";
-registerUserTools(server);
-import { registerTagTools } from "./tools/tags";
-registerTagTools(server);
-import { registerTierTools } from "./tools/tiers";
-registerTierTools(server);
-import { registerOfferTools } from "./tools/offers";
-registerOfferTools(server);
-import { registerNewsletterTools } from "./tools/newsletters";
-registerNewsletterTools(server);
-import { registerInviteTools } from "./tools/invites";
-registerInviteTools(server);
+    // Create an MCP server instance
+    const server = new McpServer({
+        name: "ghost-mcp-ts",
+        version: "0.1.0",
+        capabilities: {
+            resources: {}, // Capabilities will be enabled as handlers are registered
+            tools: {},
+            prompts: {},
+            logging: {}
+        }
+    });
 
-import { registerRoleTools } from "./tools/roles";
-registerRoleTools(server);
-import { registerWebhookTools } from "./tools/webhooks";
-registerWebhookTools(server);
+    // Register resources
+    server.resource("user", new ResourceTemplate("user://{user_id}", { list: undefined }), handleUserResource);
+    server.resource("member", new ResourceTemplate("member://{member_id}", { list: undefined }), handleMemberResource);
+    server.resource("tier", new ResourceTemplate("tier://{tier_id}", { list: undefined }), handleTierResource);
+    server.resource("offer", new ResourceTemplate("offer://{offer_id}", { list: undefined }), handleOfferResource);
+    server.resource("newsletter", new ResourceTemplate("newsletter://{newsletter_id}", { list: undefined }), handleNewsletterResource);
+    server.resource("post", new ResourceTemplate("post://{post_id}", { list: undefined }), handlePostResource);
+    server.resource("blog-info", new ResourceTemplate("blog-info://{blog_id}", { list: undefined }), handleBlogInfoResource);
 
-import { registerPrompts } from "./prompts";
-registerPrompts(server);
+    // Register tools
+    registerPostTools(server);
+    registerMemberTools(server);
+    registerUserTools(server);
+    registerTagTools(server);
+    registerTierTools(server);
+    registerOfferTools(server);
+    registerNewsletterTools(server);
+    registerInviteTools(server);
+    registerRoleTools(server);
+    registerWebhookTools(server);
+    registerPrompts(server);
+    registerDebugTools(server);
 
-// Set up and connect to the standard I/O transport
-async function startServer() {
-    const transport = new StdioServerTransport();
-    await server.connect(transport);
-    console.error("Ghost MCP TypeScript Server running on stdio"); // Log to stderr
+    // Return the server instance for Smithery to handle
+    // Smithery will create the HTTP transport and connect it
+
+    return server.server;
 }
-
-// Start the server
-startServer().catch((error: any) => { // Add type annotation for error
-    console.error("Fatal error starting server:", error);
-    process.exit(1);
-});

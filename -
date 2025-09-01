@@ -1,0 +1,80 @@
+import { mergeCapabilities, Protocol, } from "../shared/protocol.js";
+import { CreateMessageResultSchema, ElicitResultSchema, EmptyResultSchema, InitializedNotificationSchema, InitializeRequestSchema, LATEST_PROTOCOL_VERSION, ListRootsResultSchema, McpError, ErrorCode, SUPPORTED_PROTOCOL_VERSIONS, } from "../types.js";
+import Ajv from "ajv";
+/**
+ * An MCP server on top of a pluggable transport.
+ *
+ * This server will automatically respond to the initialization flow as initiated from the client.
+ *
+ * To use with custom types, extend the base Request/Notification/Result types and pass them as type parameters:
+ *
+ * ```typescript
+ * // Custom schemas
+ * const CustomRequestSchema = RequestSchema.extend({...})
+ * const CustomNotificationSchema = NotificationSchema.extend({...})
+ * const CustomResultSchema = ResultSchema.extend({...})
+ *
+ * // Type aliases
+ * type CustomRequest = z.infer<typeof CustomRequestSchema>
+ * type CustomNotification = z.infer<typeof CustomNotificationSchema>
+ * type CustomResult = z.infer<typeof CustomResultSchema>
+ *
+ * // Create typed server
+ * const server = new Server<CustomRequest, CustomNotification, CustomResult>({
+ *   name: "CustomServer",
+ *   version: "1.0.0"
+ * })
+ * ```
+ */
+export class Server extends Protocol {
+    /**
+     * Initializes this server with the given name and version information.
+     */
+    constructor(_serverInfo, options) {
+        var _a;
+        super(options);
+        this._serverInfo = _serverInfo;
+        this._capabilities = (_a = options === null || options === void 0 ? void 0 : options.capabilities) !== null && _a !== void 0 ? _a : {};
+        this._instructions = options === null || options === void 0 ? void 0 : options.instructions;
+        this.setRequestHandler(InitializeRequestSchema, (request) => this._oninitialize(request));
+        this.setNotificationHandler(InitializedNotificationSchema, () => { var _a; return (_a = this.oninitialized) === null || _a === void 0 ? void 0 : _a.call(this); });
+    }
+    /**
+     * Registers new capabilities. This can only be called before connecting to a transport.
+     *
+     * The new capabilities will be merged with any existing capabilities previously given (e.g., at initialization).
+     */
+    registerCapabilities(capabilities) {
+        if (this.transport) {
+            throw new Error("Cannot register capabilities after connecting to transport");
+        }
+        this._capabilities = mergeCapabilities(this._capabilities, capabilities);
+    }
+    assertCapabilityForMethod(method) {
+        var _a, _b, _c;
+        switch (method) {
+            case "sampling/createMessage":
+                if (!((_a = this._clientCapabilities) === null || _a === void 0 ? void 0 : _a.sampling)) {
+                    throw new Error(`Client does not support sampling (required for ${method})`);
+                }
+                break;
+            case "elicitation/create":
+                if (!((_b = this._clientCapabilities) === null || _b === void 0 ? void 0 : _b.elicitation)) {
+                    throw new Error(`Client does not support elicitation (required for ${method})`);
+                }
+                break;
+            case "roots/list":
+                if (!((_c = this._clientCapabilities) === null || _c === void 0 ? void 0 : _c.roots)) {
+                    throw new Error(`Client does not support listing roots (required for ${method})`);
+                }
+                break;
+            case "ping":
+                // No specific capability required for ping
+                break;
+        }
+    }
+    assertNotificationCapability(method) {
+        switch (method) {
+            case "notifications/message":
+                if (!this._capabilities.logging) {
+                    throw new Error(`Server does not support logging (required for ${method})`);

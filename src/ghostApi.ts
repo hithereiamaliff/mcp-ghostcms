@@ -1,13 +1,34 @@
 import GhostAdminAPI from '@tryghost/admin-api';
-import { GHOST_API_URL, GHOST_ADMIN_API_KEY, GHOST_API_VERSION } from './config';
+import { GHOST_API_URL, GHOST_ADMIN_API_KEY, GHOST_API_VERSION } from './config.js';
 
-// Initialize and export the Ghost Admin API client instance.
-// Configuration is loaded from src/config.ts.
-export const ghostApiClient = new GhostAdminAPI({
-    url: GHOST_API_URL,
-    key: GHOST_ADMIN_API_KEY,
-    version: GHOST_API_VERSION
-});
+// Live binding that tools import. Initialized via env fallback or at runtime via initGhostApi().
+export let ghostApiClient: any;
+
+export type GhostApiConfig = {
+    url: string;
+    key: string;
+    version: string;
+};
+
+let currentConfig: GhostApiConfig | null = null;
+
+export function initGhostApi(config: GhostApiConfig) {
+    ghostApiClient = new GhostAdminAPI({
+        url: config.url,
+        key: config.key,
+        version: config.version
+    });
+    currentConfig = { ...config };
+}
+
+// Fallback initialization from environment for local/stdio usage.
+if (GHOST_API_URL && GHOST_ADMIN_API_KEY) {
+    initGhostApi({ url: GHOST_API_URL, key: GHOST_ADMIN_API_KEY, version: GHOST_API_VERSION });
+}
+
+export function getGhostApiConfig(): GhostApiConfig | null {
+    return currentConfig;
+}
 
 // You can add helper functions here to wrap API calls and handle errors
 // For example:

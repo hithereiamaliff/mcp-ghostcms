@@ -1,7 +1,7 @@
 // src/tools/posts.ts
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { ghostApiClient } from "../ghostApi";
+import { ghostApiClient } from "../ghostApi.js";
 
 // Parameter schemas as ZodRawShape (object literals)
 const browseParams = {
@@ -38,15 +38,30 @@ export function registerPostTools(server: McpServer) {
     "posts_browse",
     browseParams,
     async (args, _extra) => {
-      const posts = await ghostApiClient.posts.browse(args);
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(posts, null, 2),
-          },
-        ],
-      };
+      try {
+        const posts = await ghostApiClient.posts.browse(args);
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(posts, null, 2),
+            },
+          ],
+        };
+      } catch (error: any) {
+        const status = error?.response?.status ?? error?.status ?? "unknown";
+        const body = error?.response?.data ?? error?.data ?? error?.message ?? String(error);
+        const bodyText = typeof body === "string" ? body : JSON.stringify(body, null, 2);
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text",
+              text: `posts_browse failed. status=${status}\n${bodyText}`,
+            },
+          ],
+        };
+      }
     }
   );
 
@@ -55,15 +70,30 @@ export function registerPostTools(server: McpServer) {
     "posts_read",
     readParams,
     async (args, _extra) => {
-      const post = await ghostApiClient.posts.read(args);
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(post, null, 2),
-          },
-        ],
-      };
+      try {
+        const post = await ghostApiClient.posts.read(args);
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(post, null, 2),
+            },
+          ],
+        };
+      } catch (error: any) {
+        const status = error?.response?.status ?? error?.status ?? "unknown";
+        const body = error?.response?.data ?? error?.data ?? error?.message ?? String(error);
+        const bodyText = typeof body === "string" ? body : JSON.stringify(body, null, 2);
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text",
+              text: `posts_read failed. status=${status}\n${bodyText}`,
+            },
+          ],
+        };
+      }
     }
   );
 
@@ -72,17 +102,32 @@ export function registerPostTools(server: McpServer) {
     "posts_add",
     addParams,
     async (args, _extra) => {
-      // If html is present, use source: "html" to ensure Ghost uses the html content
-      const options = args.html ? { source: "html" } : undefined;
-      const post = await ghostApiClient.posts.add(args, options);
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(post, null, 2),
-          },
-        ],
-      };
+      try {
+        // If html is present, use source: "html" to ensure Ghost uses the html content
+        const options = args.html ? { source: "html" } : undefined;
+        const post = await ghostApiClient.posts.add(args, options);
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(post, null, 2),
+            },
+          ],
+        };
+      } catch (error: any) {
+        const status = error?.response?.status ?? error?.status ?? "unknown";
+        const body = error?.response?.data ?? error?.data ?? error?.message ?? String(error);
+        const bodyText = typeof body === "string" ? body : JSON.stringify(body, null, 2);
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text",
+              text: `posts_add failed. status=${status}\n${bodyText}`,
+            },
+          ],
+        };
+      }
     }
   );
 
@@ -91,17 +136,32 @@ export function registerPostTools(server: McpServer) {
     "posts_edit",
     editParams,
     async (args, _extra) => {
-      // If html is present, use source: "html" to ensure Ghost uses the html content for updates
-      const options = args.html ? { source: "html" } : undefined;
-      const post = await ghostApiClient.posts.edit(args, options);
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(post, null, 2),
-          },
-        ],
-      };
+      try {
+        // If html is present, use source: "html" to ensure Ghost uses the html content for updates
+        const options = args.html ? { source: "html" } : undefined;
+        const post = await ghostApiClient.posts.edit(args, options);
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(post, null, 2),
+            },
+          ],
+        };
+      } catch (error: any) {
+        const status = error?.response?.status ?? error?.status ?? "unknown";
+        const body = error?.response?.data ?? error?.data ?? error?.message ?? String(error);
+        const bodyText = typeof body === "string" ? body : JSON.stringify(body, null, 2);
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text",
+              text: `posts_edit failed. status=${status}\n${bodyText}`,
+            },
+          ],
+        };
+      }
     }
   );
 
@@ -110,15 +170,30 @@ export function registerPostTools(server: McpServer) {
     "posts_delete",
     deleteParams,
     async (args, _extra) => {
-      await ghostApiClient.posts.delete(args);
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Post with id ${args.id} deleted.`,
-          },
-        ],
-      };
+      try {
+        await ghostApiClient.posts.delete(args);
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Post with id ${args.id} deleted.`,
+            },
+          ],
+        };
+      } catch (error: any) {
+        const status = error?.response?.status ?? error?.status ?? "unknown";
+        const body = error?.response?.data ?? error?.data ?? error?.message ?? String(error);
+        const bodyText = typeof body === "string" ? body : JSON.stringify(body, null, 2);
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text",
+              text: `posts_delete failed. status=${status}\n${bodyText}`,
+            },
+          ],
+        };
+      }
     }
   );
 }

@@ -1,23 +1,6 @@
 # Ghost MCP Server
 
-## ‼️ Important Notice: Python to TypeScript Migration
-I've completely rewritten the Ghost MCP Server from Python to TypeScript in this v0.1.0 release. This major change brings several benefits:
-
-- Simplified installation: Now available as an NPM package (@fanyangmeng/ghost-mcp)
-- Improved reliability: Uses the official @tryghost/admin-api client instead of custom implementation
-- Better maintainability: TypeScript provides type safety and better code organization
-- Streamlined configuration: Simple environment variable setup
-
-### Breaking Changes
-
-- Python dependencies are no longer required
-- Configuration method has changed (now using Node.js environment variables)
-- Docker deployment has been simplified
-- Different installation process (now using NPM)
-
-Please see the below updated documentation for details on migrating from the Python version. If you encounter any issues, feel free to open an issue on GitHub.
-
----
+> This is a fork of [MFYDev/ghost-mcp](https://github.com/MFYDev/ghost-mcp) with enhanced error handling, improved configuration, and diagnostic tools.
 
 A Model Context Protocol (MCP) server for interacting with Ghost CMS through LLM interfaces like Claude. This server provides secure and comprehensive access to your Ghost blog, leveraging JWT authentication and a rich set of MCP tools for managing posts, users, members, tiers, offers, and newsletters.
 
@@ -29,12 +12,34 @@ A Model Context Protocol (MCP) server for interacting with Ghost CMS through LLM
 - Comprehensive entity access including posts, users, members, tiers, offers, and newsletters
 - Advanced search functionality with both fuzzy and exact matching options
 - Detailed, human-readable output for Ghost entities
-- Robust error handling using custom `GhostError` exceptions
-- Integrated logging support via MCP context for enhanced troubleshooting
+- Enhanced error handling with detailed status codes and response bodies
+- Runtime configuration via Smithery with proper environment variable fallbacks
+- Diagnostic tools for troubleshooting API connectivity and configuration issues
 
 ## Usage
 
-To use this with MCP clients, for instance, Claude Desktop, add the following to your `claude_desktop_config.json`:
+### Configuration
+
+This MCP server requires the following configuration:
+
+- **GHOST_API_URL**: Your Ghost site URL (domain only, no path), e.g., `https://yourblog.com`
+- **GHOST_ADMIN_API_KEY**: Your Ghost Admin API key in `id:secret` format (from Ghost Admin → Settings → Integrations)
+- **GHOST_API_VERSION**: Ghost API version (`v5.0` for Ghost 5.x, `v6.0` for Ghost 6.x)
+
+### Running with Smithery
+
+The recommended way to run this MCP server is with Smithery:
+
+```bash
+npm run dev
+```
+
+This will start the server on port 8181 and open the Smithery Playground in your browser.
+
+### Using with Claude Desktop
+
+To use this with MCP clients like Claude Desktop, add the following to your `claude_desktop_config.json`:
+
 ```json
 {
   "mcpServers": {
@@ -134,10 +139,47 @@ This MCP server exposes a comprehensive set of tools for managing your Ghost CMS
 
 > Each tool is accessible via the MCP protocol and can be invoked from compatible clients. For detailed parameter schemas and usage, see the source code in `src/tools/`.
 
+## Error Handling & Diagnostics
 
-## Error Handling
+This fork includes enhanced error handling that provides detailed information about API failures:
 
-Ghost MCP Server employs a custom `GhostError` exception to handle API communication errors and processing issues. This ensures clear and descriptive error messages to assist with troubleshooting.
+- HTTP status codes are captured and reported
+- Full response bodies are included in error messages
+- Runtime configuration is logged at startup
+- Diagnostic tools are available to troubleshoot connectivity issues:
+  - `admin_site_ping`: Tests if the Ghost Admin API endpoint is reachable
+  - `config_echo`: Shows the current Ghost API configuration (with masked key)
+
+These improvements make it much easier to diagnose common issues like:
+- Incorrect API URL format
+- Missing or malformed Admin API keys
+- API version mismatches
+- Network/proxy configuration problems
+
+## Development
+
+### Setup
+
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Create a `.env` file with your Ghost configuration:
+   ```
+   GHOST_API_URL=https://yourblog.com
+   GHOST_ADMIN_API_KEY=your_admin_api_key
+   GHOST_API_VERSION=v5.0
+   ```
+4. Build the project: `npm run build`
+5. Start the dev server: `npm run dev`
+
+### Troubleshooting
+
+If you encounter "Resource not found" errors:
+
+1. Verify your Ghost Admin API key is in the correct `id:secret` format
+2. Ensure your GHOST_API_URL is just the domain (no path/port)
+3. Try toggling GHOST_API_VERSION between `v5.0` and `v6.0` to match your Ghost version
+4. Use the `admin_site_ping` tool to verify the Admin API endpoint is reachable
+5. Check the server logs for the actual configuration being used
 
 ## Contributing
 
@@ -148,4 +190,4 @@ Ghost MCP Server employs a custom `GhostError` exception to handle API communica
 
 ## License
 
-MIT
+[MIT](./LICENSE)

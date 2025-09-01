@@ -1,0 +1,32 @@
+# Smithery configuration file: https://smithery.ai/docs/build/project-config/smithery-yaml
+runtime: "typescript"
+startCommandType: "http"
+esbuildOptions:
+  external:
+    - "@modelcontextprotocol/sdk"
+    - "@modelcontextprotocol/sdk/server/mcp.js"
+configSchema:
+  properties:
+    GHOST_ADMIN_API_KEY:
+      description: "Ghost Admin API Key"
+      type: "string"
+    GHOST_API_URL:
+      description: "Ghost API URL"
+      type: "string"
+    GHOST_API_VERSION:
+      default: "v6.0"
+      description: "Ghost API Version"
+      type: "string"
+    port:
+      default: 8080
+      description: "HTTP server port"
+      type: "number"
+  required:
+    - "GHOST_API_URL"
+    - "GHOST_ADMIN_API_KEY"
+  type: "object"
+exampleConfig:
+  GHOST_ADMIN_API_KEY: "your-admin-api-key"
+  GHOST_API_URL: "https://your-ghost-blog.com"
+  GHOST_API_VERSION: "v6.0"
+  port: 8080

@@ -1,6 +1,5 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { ghostApiClient } from './ghostApi';
-import { Post, User, Member, Tier, Offer, Newsletter } from './models'; // Import data models
+import { ghostApiClient } from './ghostApi.js';
+import { Post, User, Member, Tier, Offer, Newsletter } from './models.js'; // Import data models
 
 // Type definitions compatible with MCP SDK resource handler expectations
 type Variables = Record<string, string | string[]>;
