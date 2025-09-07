@@ -12,12 +12,17 @@ export type GhostApiConfig = {
 
 let currentConfig: GhostApiConfig | null = null;
 
-export function initGhostApi(config: GhostApiConfig) {
-    ghostApiClient = new GhostAdminAPI({
+export function makeGhostApi(config: GhostApiConfig) {
+    console.log(`[ghost-mcp] Using Ghost Admin API: url=${config.url}, version=${config.version}, keyId=${config.key.substring(0, 4)}...${config.key.substring(config.key.length - 4)}`);
+    return new GhostAdminAPI({
         url: config.url,
         key: config.key,
-        version: config.version
+        version: config.version,
     });
+}
+
+export function initGhostApi(config: GhostApiConfig) {
+    ghostApiClient = makeGhostApi(config);
     currentConfig = { ...config };
 }
 
@@ -29,6 +34,7 @@ if (GHOST_API_URL && GHOST_ADMIN_API_KEY) {
 export function getGhostApiConfig(): GhostApiConfig | null {
     return currentConfig;
 }
+
 
 // You can add helper functions here to wrap API calls and handle errors
 // For example:

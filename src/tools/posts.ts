@@ -1,6 +1,7 @@
 // src/tools/posts.ts
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { ghostContentApiClient } from "../ghostContentApi.js";
 import { ghostApiClient } from "../ghostApi.js";
 
 // Parameter schemas as ZodRawShape (object literals)
@@ -39,7 +40,7 @@ export function registerPostTools(server: McpServer) {
     browseParams,
     async (args, _extra) => {
       try {
-        const posts = await ghostApiClient.posts.browse(args);
+        const posts = await ghostContentApiClient.posts.browse({ include: 'authors', ...args });
         return {
           content: [
             {

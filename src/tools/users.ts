@@ -1,6 +1,7 @@
 // src/tools/users.ts
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { ghostContentApiClient } from "../ghostContentApi.js";
 import { ghostApiClient } from "../ghostApi.js";
 
 // Parameter schemas as ZodRawShape (object literals)
@@ -37,15 +38,30 @@ export function registerUserTools(server: McpServer) {
     "users_browse",
     browseParams,
     async (args, _extra) => {
-      const users = await ghostApiClient.users.browse(args);
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(users, null, 2),
-          },
-        ],
-      };
+      try {
+        const users = await ghostContentApiClient.authors.browse(args);
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(users, null, 2),
+            },
+          ],
+        };
+      } catch (error: any) {
+        const status = error?.response?.status ?? error?.status ?? "unknown";
+        const body = error?.response?.data ?? error?.data ?? error?.message ?? String(error);
+        const bodyText = typeof body === "string" ? body : JSON.stringify(body, null, 2);
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text",
+              text: `users_browse failed. status=${status}\n${bodyText}`,
+            },
+          ],
+        };
+      }
     }
   );
 

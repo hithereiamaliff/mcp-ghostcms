@@ -3,6 +3,7 @@
 // Use ESM imports for MCP SDK subpaths (package exports only expose subpaths)
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { initGhostApi } from './ghostApi.js';
+import { initGhostContentApi } from './ghostContentApi.js';
 import {
     handleUserResource,
     handleMemberResource,
@@ -40,9 +41,11 @@ export default function createServer({ config }: { config: ConfigType }) {
         key: config.GHOST_ADMIN_API_KEY,
         version: config.GHOST_API_VERSION,
     });
-    const keyId = (config.GHOST_ADMIN_API_KEY || '').split(':')[0] || 'unknown';
-    console.log(`[ghost-mcp] Using Ghost Admin API: url=${config.GHOST_API_URL}, version=${config.GHOST_API_VERSION}, keyId=${keyId}`);
-
+    initGhostContentApi({
+        url: config.GHOST_API_URL,
+        key: config.GHOST_CONTENT_API_KEY,
+        version: config.GHOST_API_VERSION,
+    });
     // Create an MCP server instance
     const server = new McpServer({
         name: "ghost-mcp-ts",
