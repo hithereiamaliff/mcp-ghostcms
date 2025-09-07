@@ -1,15 +1,13 @@
 # Ghost MCP Server
 
+[![smithery badge](https://smithery.ai/badge/@hithereiamaliff/mcp-ghostcms)](https://smithery.ai/server/@hithereiamaliff/mcp-ghostcms)
 > This is a fork of [MFYDev/ghost-mcp](https://github.com/MFYDev/ghost-mcp), now maintained and improved by [@hithereiamaliff](https://github.com/hithereiamaliff/mcp-ghostcms).
 
-This Model Context Protocol (MCP) server enables seamless interaction with your Ghost CMS instance via Large Language Model (LLM) interfaces. It offers robust, secure access to your blog's data and administrative functions, utilizing a dual-API strategy for both content retrieval and management tasks.
-
-![demo](./assets/ghost-mcp-demo.gif)
+This Model Context Protocol (MCP) server provides a powerful and flexible way to manage your Ghost CMS instance using Large Language Model (LLM) interfaces. It offers comprehensive and secure access to your blog's administrative functions, allowing you to automate and streamline your content management workflows.
 
 ## Features
 
-- **Dual API Strategy**: Utilizes both the Ghost **Content API** for safely fetching public data and the **Admin API** for management tasks.
-- **Secure API Requests**: Uses `@tryghost/content-api` for reading posts and `@tryghost/admin-api` for all other operations.
+- **Robust API Integration**: Utilizes direct, authenticated `axios` calls for all Admin API operations, ensuring a stable and reliable connection that is not dependent on external libraries.
 - **Comprehensive Entity Access**: Manages posts, users, members, tiers, offers, and newsletters.
 - **Enhanced Error Handling**: Provides detailed status codes and response bodies.
 - **Modern Transport**: Exclusively uses the Streamable HTTP transport, with all deprecated STDIO logic removed.
@@ -23,7 +21,6 @@ This MCP server requires the following configuration:
 
 - **GHOST_API_URL**: Your Ghost site URL (domain only, no path), e.g., `https://yourghostbloginstance.com`
 - **GHOST_ADMIN_API_KEY**: Your Ghost Admin API key in `id:secret` format (from Ghost Admin → Settings → Integrations).
-- **GHOST_CONTENT_API_KEY**: Your Ghost Content API key (from Ghost Admin → Settings → Integrations).
 - **GHOST_API_VERSION**: Ghost API version (`v5.0` for Ghost 5.x, `v6.0` for Ghost 6.x).
 
 ### Running with Smithery
@@ -45,7 +42,7 @@ To use this with MCP clients like Claude Desktop, add the following to your `cla
   "mcpServers": {
       "mcp-ghostcms": {
         "command": "npx",
-        "args": ["-y", "@hithereiamaliff/ghost-mcp"],
+        "args": ["-y", "@hithereiamaliff/mcp-ghostcms"],
         "env": {
             "GHOST_API_URL": "https://yourghostbloginstance.com",
             "GHOST_ADMIN_API_KEY": "your_admin_api_key",
@@ -173,13 +170,12 @@ These improvements make it much easier to diagnose common issues like:
 
 ### Troubleshooting
 
-If you encounter "Resource not found" errors:
+If you encounter authentication or "Resource not found" errors:
 
-1. Verify your Ghost Admin API key is in the correct `id:secret` format
-2. Ensure your GHOST_API_URL is just the domain (no path/port)
-3. Try toggling GHOST_API_VERSION between `v5.0` and `v6.0` to match your Ghost version
-4. Use the `admin_site_ping` tool to verify the Admin API endpoint is reachable
-5. Check the server logs for the actual configuration being used
+1.  Verify your Ghost Admin API key is in the correct `id:secret` format.
+2.  Ensure your `GHOST_API_URL` is the correct domain for your Ghost instance.
+3.  Use the `admin_site_ping` tool to verify that the Admin API endpoint is reachable.
+4.  Check the server logs for the actual configuration being used.
 
 ## Contributing
 
