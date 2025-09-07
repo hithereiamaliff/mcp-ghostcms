@@ -36,7 +36,7 @@ export function generateGhostAdminToken(apiKey: string): string {
     const [id, secret] = apiKey.split(':');
     const token = jwt.sign({}, Buffer.from(secret, 'hex'), {
         keyid: id,
-        algorithm: 'ES256',
+        algorithm: 'HS256',
         expiresIn: '5m',
         audience: `/admin/`
     });
