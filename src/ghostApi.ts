@@ -26,10 +26,6 @@ export function initGhostApi(config: GhostApiConfig) {
     currentConfig = { ...config };
 }
 
-// Fallback initialization from environment for local/stdio usage.
-if (GHOST_API_URL && GHOST_ADMIN_API_KEY) {
-    initGhostApi({ url: GHOST_API_URL, key: GHOST_ADMIN_API_KEY, version: GHOST_API_VERSION });
-}
 
 export function getGhostApiConfig(): GhostApiConfig | null {
     return currentConfig;

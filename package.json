@@ -13,12 +13,10 @@
     "scripts": {
         "dev": "npx @smithery/cli dev",
         "build": "npm run build:http",
-        "build:stdio": "tsc",
         "build:http": "npx @smithery/cli build",
         "start": "npm run start:http",
         "start:http": "node .smithery/index.cjs",
-        "start:stdio": "node build/server.js",
-        "prepare": "npm run build:stdio",
+        "prepare": "npm run build",
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "publishConfig": {
