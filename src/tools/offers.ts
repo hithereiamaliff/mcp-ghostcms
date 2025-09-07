@@ -1,7 +1,8 @@
 // src/tools/offers.ts
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { ghostApiClient } from "../ghostApi.js";
+import { getGhostApiConfig, generateGhostAdminToken } from "../ghostApi.js";
+import axios from 'axios';
 
 // Parameter schemas as ZodRawShape (object literals)
 const browseParams = {
@@ -46,15 +47,39 @@ export function registerOfferTools(server: McpServer) {
     "offers_browse",
     browseParams,
     async (args, _extra) => {
-      const offers = await ghostApiClient.offers.browse(args);
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(offers, null, 2),
-          },
-        ],
-      };
+        const config = getGhostApiConfig();
+        if (!config) {
+            return { isError: true, content: [{ type: "text", text: "Ghost API not configured" }] };
+        }
+        try {
+            const token = generateGhostAdminToken(config.key);
+            const url = `${config.url}/ghost/api/admin/offers/`;
+            const headers = {
+                'Authorization': `Ghost ${token}`
+            };
+            const response = await axios.get(url, { params: args, headers });
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: JSON.stringify(response.data.offers, null, 2),
+                    },
+                ],
+            };
+        } catch (error: any) {
+            const status = error?.response?.status ?? error?.status ?? "unknown";
+            const body = error?.response?.data ?? error?.data ?? error?.message ?? String(error);
+            const bodyText = typeof body === "string" ? body : JSON.stringify(body, null, 2);
+            return {
+                isError: true,
+                content: [
+                    {
+                        type: "text",
+                        text: `offers_browse failed. status=${status}\n${bodyText}`,
+                    },
+                ],
+            };
+        }
     }
   );
 
@@ -63,15 +88,39 @@ export function registerOfferTools(server: McpServer) {
     "offers_read",
     readParams,
     async (args, _extra) => {
-      const offer = await ghostApiClient.offers.read(args);
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(offer, null, 2),
-          },
-        ],
-      };
+        const config = getGhostApiConfig();
+        if (!config) {
+            return { isError: true, content: [{ type: "text", text: "Ghost API not configured" }] };
+        }
+        try {
+            const token = generateGhostAdminToken(config.key);
+            const url = `${config.url}/ghost/api/admin/offers/${args.id}/`;
+            const headers = {
+                'Authorization': `Ghost ${token}`
+            };
+            const response = await axios.get(url, { headers });
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: JSON.stringify(response.data.offers[0], null, 2),
+                    },
+                ],
+            };
+        } catch (error: any) {
+            const status = error?.response?.status ?? error?.status ?? "unknown";
+            const body = error?.response?.data ?? error?.data ?? error?.message ?? String(error);
+            const bodyText = typeof body === "string" ? body : JSON.stringify(body, null, 2);
+            return {
+                isError: true,
+                content: [
+                    {
+                        type: "text",
+                        text: `offers_read failed. status=${status}\n${bodyText}`,
+                    },
+                ],
+            };
+        }
     }
   );
 
@@ -80,15 +129,39 @@ export function registerOfferTools(server: McpServer) {
     "offers_add",
     addParams,
     async (args, _extra) => {
-      const offer = await ghostApiClient.offers.add(args);
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(offer, null, 2),
-          },
-        ],
-      };
+        const config = getGhostApiConfig();
+        if (!config) {
+            return { isError: true, content: [{ type: "text", text: "Ghost API not configured" }] };
+        }
+        try {
+            const token = generateGhostAdminToken(config.key);
+            const url = `${config.url}/ghost/api/admin/offers/`;
+            const headers = {
+                'Authorization': `Ghost ${token}`
+            };
+            const response = await axios.post(url, { offers: [args] }, { headers });
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: JSON.stringify(response.data.offers[0], null, 2),
+                    },
+                ],
+            };
+        } catch (error: any) {
+            const status = error?.response?.status ?? error?.status ?? "unknown";
+            const body = error?.response?.data ?? error?.data ?? error?.message ?? String(error);
+            const bodyText = typeof body === "string" ? body : JSON.stringify(body, null, 2);
+            return {
+                isError: true,
+                content: [
+                    {
+                        type: "text",
+                        text: `offers_add failed. status=${status}\n${bodyText}`,
+                    },
+                ],
+            };
+        }
     }
   );
 
@@ -97,15 +170,39 @@ export function registerOfferTools(server: McpServer) {
     "offers_edit",
     editParams,
     async (args, _extra) => {
-      const offer = await ghostApiClient.offers.edit(args);
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(offer, null, 2),
-          },
-        ],
-      };
+        const config = getGhostApiConfig();
+        if (!config) {
+            return { isError: true, content: [{ type: "text", text: "Ghost API not configured" }] };
+        }
+        try {
+            const token = generateGhostAdminToken(config.key);
+            const url = `${config.url}/ghost/api/admin/offers/${args.id}/`;
+            const headers = {
+                'Authorization': `Ghost ${token}`
+            };
+            const response = await axios.put(url, { offers: [args] }, { headers });
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: JSON.stringify(response.data.offers[0], null, 2),
+                    },
+                ],
+            };
+        } catch (error: any) {
+            const status = error?.response?.status ?? error?.status ?? "unknown";
+            const body = error?.response?.data ?? error?.data ?? error?.message ?? String(error);
+            const bodyText = typeof body === "string" ? body : JSON.stringify(body, null, 2);
+            return {
+                isError: true,
+                content: [
+                    {
+                        type: "text",
+                        text: `offers_edit failed. status=${status}\n${bodyText}`,
+                    },
+                ],
+            };
+        }
     }
   );
 
@@ -114,15 +211,39 @@ export function registerOfferTools(server: McpServer) {
     "offers_delete",
     deleteParams,
     async (args, _extra) => {
-      await ghostApiClient.offers.delete(args);
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Offer with id ${args.id} deleted.`,
-          },
-        ],
-      };
+        const config = getGhostApiConfig();
+        if (!config) {
+            return { isError: true, content: [{ type: "text", text: "Ghost API not configured" }] };
+        }
+        try {
+            const token = generateGhostAdminToken(config.key);
+            const url = `${config.url}/ghost/api/admin/offers/${args.id}/`;
+            const headers = {
+                'Authorization': `Ghost ${token}`
+            };
+            await axios.delete(url, { headers });
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: `Offer with id ${args.id} deleted.`,
+                    },
+                ],
+            };
+        } catch (error: any) {
+            const status = error?.response?.status ?? error?.status ?? "unknown";
+            const body = error?.response?.data ?? error?.data ?? error?.message ?? String(error);
+            const bodyText = typeof body === "string" ? body : JSON.stringify(body, null, 2);
+            return {
+                isError: true,
+                content: [
+                    {
+                        type: "text",
+                        text: `offers_delete failed. status=${status}\n${bodyText}`,
+                    },
+                ],
+            };
+        }
     }
   );
 }

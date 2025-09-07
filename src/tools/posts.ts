@@ -1,8 +1,8 @@
 // src/tools/posts.ts
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { ghostContentApiClient } from "../ghostContentApi.js";
-import { ghostApiClient } from "../ghostApi.js";
+import { ghostApiClient, getGhostApiConfig, generateGhostAdminToken } from "../ghostApi.js";
+import axios from 'axios';
 
 // Parameter schemas as ZodRawShape (object literals)
 const browseParams = {
@@ -39,13 +39,22 @@ export function registerPostTools(server: McpServer) {
     "posts_browse",
     browseParams,
     async (args, _extra) => {
+      const config = getGhostApiConfig();
+      if (!config) {
+        return { isError: true, content: [{ type: "text", text: "Ghost API not configured" }] };
+      }
       try {
-        const posts = await ghostContentApiClient.posts.browse({ include: 'authors', ...args });
+        const token = generateGhostAdminToken(config.key);
+        const url = `${config.url}/ghost/api/admin/posts/`;
+        const headers = {
+          'Authorization': `Ghost ${token}`
+        };
+        const response = await axios.get(url, { params: args, headers });
         return {
           content: [
             {
               type: "text",
-              text: JSON.stringify(posts, null, 2),
+              text: JSON.stringify(response.data.posts, null, 2),
             },
           ],
         };
@@ -71,17 +80,26 @@ export function registerPostTools(server: McpServer) {
     "posts_read",
     readParams,
     async (args, _extra) => {
-      try {
-        const post = await ghostApiClient.posts.read(args);
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(post, null, 2),
-            },
-          ],
-        };
-      } catch (error: any) {
+        const config = getGhostApiConfig();
+        if (!config) {
+            return { isError: true, content: [{ type: "text", text: "Ghost API not configured" }] };
+        }
+        try {
+            const token = generateGhostAdminToken(config.key);
+            const url = `${config.url}/ghost/api/admin/posts/${args.id || `slug/${args.slug}`}/`;
+            const headers = {
+                'Authorization': `Ghost ${token}`
+            };
+            const response = await axios.get(url, { headers });
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: JSON.stringify(response.data.posts[0], null, 2),
+                    },
+                ],
+            };
+        } catch (error: any) {
         const status = error?.response?.status ?? error?.status ?? "unknown";
         const body = error?.response?.data ?? error?.data ?? error?.message ?? String(error);
         const bodyText = typeof body === "string" ? body : JSON.stringify(body, null, 2);
@@ -103,19 +121,26 @@ export function registerPostTools(server: McpServer) {
     "posts_add",
     addParams,
     async (args, _extra) => {
-      try {
-        // If html is present, use source: "html" to ensure Ghost uses the html content
-        const options = args.html ? { source: "html" } : undefined;
-        const post = await ghostApiClient.posts.add(args, options);
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(post, null, 2),
-            },
-          ],
-        };
-      } catch (error: any) {
+        const config = getGhostApiConfig();
+        if (!config) {
+            return { isError: true, content: [{ type: "text", text: "Ghost API not configured" }] };
+        }
+        try {
+            const token = generateGhostAdminToken(config.key);
+            const url = `${config.url}/ghost/api/admin/posts/`;
+            const headers = {
+                'Authorization': `Ghost ${token}`
+            };
+            const response = await axios.post(url, { posts: [args] }, { headers });
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: JSON.stringify(response.data.posts[0], null, 2),
+                    },
+                ],
+            };
+        } catch (error: any) {
         const status = error?.response?.status ?? error?.status ?? "unknown";
         const body = error?.response?.data ?? error?.data ?? error?.message ?? String(error);
         const bodyText = typeof body === "string" ? body : JSON.stringify(body, null, 2);
@@ -137,19 +162,26 @@ export function registerPostTools(server: McpServer) {
     "posts_edit",
     editParams,
     async (args, _extra) => {
-      try {
-        // If html is present, use source: "html" to ensure Ghost uses the html content for updates
-        const options = args.html ? { source: "html" } : undefined;
-        const post = await ghostApiClient.posts.edit(args, options);
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(post, null, 2),
-            },
-          ],
-        };
-      } catch (error: any) {
+        const config = getGhostApiConfig();
+        if (!config) {
+            return { isError: true, content: [{ type: "text", text: "Ghost API not configured" }] };
+        }
+        try {
+            const token = generateGhostAdminToken(config.key);
+            const url = `${config.url}/ghost/api/admin/posts/${args.id}/`;
+            const headers = {
+                'Authorization': `Ghost ${token}`
+            };
+            const response = await axios.put(url, { posts: [args] }, { headers });
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: JSON.stringify(response.data.posts[0], null, 2),
+                    },
+                ],
+            };
+        } catch (error: any) {
         const status = error?.response?.status ?? error?.status ?? "unknown";
         const body = error?.response?.data ?? error?.data ?? error?.message ?? String(error);
         const bodyText = typeof body === "string" ? body : JSON.stringify(body, null, 2);
@@ -171,17 +203,26 @@ export function registerPostTools(server: McpServer) {
     "posts_delete",
     deleteParams,
     async (args, _extra) => {
-      try {
-        await ghostApiClient.posts.delete(args);
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Post with id ${args.id} deleted.`,
-            },
-          ],
-        };
-      } catch (error: any) {
+        const config = getGhostApiConfig();
+        if (!config) {
+            return { isError: true, content: [{ type: "text", text: "Ghost API not configured" }] };
+        }
+        try {
+            const token = generateGhostAdminToken(config.key);
+            const url = `${config.url}/ghost/api/admin/posts/${args.id}/`;
+            const headers = {
+                'Authorization': `Ghost ${token}`
+            };
+            await axios.delete(url, { headers });
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: `Post with id ${args.id} deleted.`,
+                    },
+                ],
+            };
+        } catch (error: any) {
         const status = error?.response?.status ?? error?.status ?? "unknown";
         const body = error?.response?.data ?? error?.data ?? error?.message ?? String(error);
         const bodyText = typeof body === "string" ? body : JSON.stringify(body, null, 2);

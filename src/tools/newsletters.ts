@@ -1,7 +1,8 @@
 // src/tools/newsletters.ts
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { ghostApiClient } from "../ghostApi.js";
+import { getGhostApiConfig, generateGhostAdminToken } from "../ghostApi.js";
+import axios from 'axios';
 
 // Parameter schemas as ZodRawShape (object literals)
 const browseParams = {
@@ -62,15 +63,39 @@ export function registerNewsletterTools(server: McpServer) {
     "newsletters_browse",
     browseParams,
     async (args, _extra) => {
-      const newsletters = await ghostApiClient.newsletters.browse(args);
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(newsletters, null, 2),
-          },
-        ],
-      };
+        const config = getGhostApiConfig();
+        if (!config) {
+            return { isError: true, content: [{ type: "text", text: "Ghost API not configured" }] };
+        }
+        try {
+            const token = generateGhostAdminToken(config.key);
+            const url = `${config.url}/ghost/api/admin/newsletters/`;
+            const headers = {
+                'Authorization': `Ghost ${token}`
+            };
+            const response = await axios.get(url, { params: args, headers });
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: JSON.stringify(response.data.newsletters, null, 2),
+                    },
+                ],
+            };
+        } catch (error: any) {
+            const status = error?.response?.status ?? error?.status ?? "unknown";
+            const body = error?.response?.data ?? error?.data ?? error?.message ?? String(error);
+            const bodyText = typeof body === "string" ? body : JSON.stringify(body, null, 2);
+            return {
+                isError: true,
+                content: [
+                    {
+                        type: "text",
+                        text: `newsletters_browse failed. status=${status}\n${bodyText}`,
+                    },
+                ],
+            };
+        }
     }
   );
 
@@ -79,15 +104,39 @@ export function registerNewsletterTools(server: McpServer) {
     "newsletters_read",
     readParams,
     async (args, _extra) => {
-      const newsletter = await ghostApiClient.newsletters.read(args);
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(newsletter, null, 2),
-          },
-        ],
-      };
+        const config = getGhostApiConfig();
+        if (!config) {
+            return { isError: true, content: [{ type: "text", text: "Ghost API not configured" }] };
+        }
+        try {
+            const token = generateGhostAdminToken(config.key);
+            const url = `${config.url}/ghost/api/admin/newsletters/${args.id}/`;
+            const headers = {
+                'Authorization': `Ghost ${token}`
+            };
+            const response = await axios.get(url, { headers });
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: JSON.stringify(response.data.newsletters[0], null, 2),
+                    },
+                ],
+            };
+        } catch (error: any) {
+            const status = error?.response?.status ?? error?.status ?? "unknown";
+            const body = error?.response?.data ?? error?.data ?? error?.message ?? String(error);
+            const bodyText = typeof body === "string" ? body : JSON.stringify(body, null, 2);
+            return {
+                isError: true,
+                content: [
+                    {
+                        type: "text",
+                        text: `newsletters_read failed. status=${status}\n${bodyText}`,
+                    },
+                ],
+            };
+        }
     }
   );
 
@@ -96,15 +145,39 @@ export function registerNewsletterTools(server: McpServer) {
     "newsletters_add",
     addParams,
     async (args, _extra) => {
-      const newsletter = await ghostApiClient.newsletters.add(args);
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(newsletter, null, 2),
-          },
-        ],
-      };
+        const config = getGhostApiConfig();
+        if (!config) {
+            return { isError: true, content: [{ type: "text", text: "Ghost API not configured" }] };
+        }
+        try {
+            const token = generateGhostAdminToken(config.key);
+            const url = `${config.url}/ghost/api/admin/newsletters/`;
+            const headers = {
+                'Authorization': `Ghost ${token}`
+            };
+            const response = await axios.post(url, { newsletters: [args] }, { headers });
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: JSON.stringify(response.data.newsletters[0], null, 2),
+                    },
+                ],
+            };
+        } catch (error: any) {
+            const status = error?.response?.status ?? error?.status ?? "unknown";
+            const body = error?.response?.data ?? error?.data ?? error?.message ?? String(error);
+            const bodyText = typeof body === "string" ? body : JSON.stringify(body, null, 2);
+            return {
+                isError: true,
+                content: [
+                    {
+                        type: "text",
+                        text: `newsletters_add failed. status=${status}\n${bodyText}`,
+                    },
+                ],
+            };
+        }
     }
   );
 
@@ -113,15 +186,39 @@ export function registerNewsletterTools(server: McpServer) {
     "newsletters_edit",
     editParams,
     async (args, _extra) => {
-      const newsletter = await ghostApiClient.newsletters.edit(args);
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(newsletter, null, 2),
-          },
-        ],
-      };
+        const config = getGhostApiConfig();
+        if (!config) {
+            return { isError: true, content: [{ type: "text", text: "Ghost API not configured" }] };
+        }
+        try {
+            const token = generateGhostAdminToken(config.key);
+            const url = `${config.url}/ghost/api/admin/newsletters/${args.id}/`;
+            const headers = {
+                'Authorization': `Ghost ${token}`
+            };
+            const response = await axios.put(url, { newsletters: [args] }, { headers });
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: JSON.stringify(response.data.newsletters[0], null, 2),
+                    },
+                ],
+            };
+        } catch (error: any) {
+            const status = error?.response?.status ?? error?.status ?? "unknown";
+            const body = error?.response?.data ?? error?.data ?? error?.message ?? String(error);
+            const bodyText = typeof body === "string" ? body : JSON.stringify(body, null, 2);
+            return {
+                isError: true,
+                content: [
+                    {
+                        type: "text",
+                        text: `newsletters_edit failed. status=${status}\n${bodyText}`,
+                    },
+                ],
+            };
+        }
     }
   );
 
@@ -130,15 +227,39 @@ export function registerNewsletterTools(server: McpServer) {
     "newsletters_delete",
     deleteParams,
     async (args, _extra) => {
-      await ghostApiClient.newsletters.delete(args);
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Newsletter with id ${args.id} deleted.`,
-          },
-        ],
-      };
+        const config = getGhostApiConfig();
+        if (!config) {
+            return { isError: true, content: [{ type: "text", text: "Ghost API not configured" }] };
+        }
+        try {
+            const token = generateGhostAdminToken(config.key);
+            const url = `${config.url}/ghost/api/admin/newsletters/${args.id}/`;
+            const headers = {
+                'Authorization': `Ghost ${token}`
+            };
+            await axios.delete(url, { headers });
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: `Newsletter with id ${args.id} deleted.`,
+                    },
+                ],
+            };
+        } catch (error: any) {
+            const status = error?.response?.status ?? error?.status ?? "unknown";
+            const body = error?.response?.data ?? error?.data ?? error?.message ?? String(error);
+            const bodyText = typeof body === "string" ? body : JSON.stringify(body, null, 2);
+            return {
+                isError: true,
+                content: [
+                    {
+                        type: "text",
+                        text: `newsletters_delete failed. status=${status}\n${bodyText}`,
+                    },
+                ],
+            };
+        }
     }
   );
 }

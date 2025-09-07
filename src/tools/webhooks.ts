@@ -1,7 +1,8 @@
 // src/tools/webhooks.ts
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { ghostApiClient } from "../ghostApi.js";
+import { getGhostApiConfig, generateGhostAdminToken } from "../ghostApi.js";
+import axios from 'axios';
 
 // Parameter schemas as ZodRawShape (object literals)
 const addParams = {
@@ -29,15 +30,39 @@ export function registerWebhookTools(server: McpServer) {
     "webhooks_add",
     addParams,
     async (args, _extra) => {
-      const webhook = await ghostApiClient.webhooks.add(args);
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(webhook, null, 2),
-          },
-        ],
-      };
+        const config = getGhostApiConfig();
+        if (!config) {
+            return { isError: true, content: [{ type: "text", text: "Ghost API not configured" }] };
+        }
+        try {
+            const token = generateGhostAdminToken(config.key);
+            const url = `${config.url}/ghost/api/admin/webhooks/`;
+            const headers = {
+                'Authorization': `Ghost ${token}`
+            };
+            const response = await axios.post(url, { webhooks: [args] }, { headers });
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: JSON.stringify(response.data.webhooks[0], null, 2),
+                    },
+                ],
+            };
+        } catch (error: any) {
+            const status = error?.response?.status ?? error?.status ?? "unknown";
+            const body = error?.response?.data ?? error?.data ?? error?.message ?? String(error);
+            const bodyText = typeof body === "string" ? body : JSON.stringify(body, null, 2);
+            return {
+                isError: true,
+                content: [
+                    {
+                        type: "text",
+                        text: `webhooks_add failed. status=${status}\n${bodyText}`,
+                    },
+                ],
+            };
+        }
     }
   );
 
@@ -46,15 +71,39 @@ export function registerWebhookTools(server: McpServer) {
     "webhooks_edit",
     editParams,
     async (args, _extra) => {
-      const webhook = await ghostApiClient.webhooks.edit(args);
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(webhook, null, 2),
-          },
-        ],
-      };
+        const config = getGhostApiConfig();
+        if (!config) {
+            return { isError: true, content: [{ type: "text", text: "Ghost API not configured" }] };
+        }
+        try {
+            const token = generateGhostAdminToken(config.key);
+            const url = `${config.url}/ghost/api/admin/webhooks/${args.id}/`;
+            const headers = {
+                'Authorization': `Ghost ${token}`
+            };
+            const response = await axios.put(url, { webhooks: [args] }, { headers });
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: JSON.stringify(response.data.webhooks[0], null, 2),
+                    },
+                ],
+            };
+        } catch (error: any) {
+            const status = error?.response?.status ?? error?.status ?? "unknown";
+            const body = error?.response?.data ?? error?.data ?? error?.message ?? String(error);
+            const bodyText = typeof body === "string" ? body : JSON.stringify(body, null, 2);
+            return {
+                isError: true,
+                content: [
+                    {
+                        type: "text",
+                        text: `webhooks_edit failed. status=${status}\n${bodyText}`,
+                    },
+                ],
+            };
+        }
     }
   );
 
@@ -63,15 +112,39 @@ export function registerWebhookTools(server: McpServer) {
     "webhooks_delete",
     deleteParams,
     async (args, _extra) => {
-      await ghostApiClient.webhooks.delete(args);
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Webhook with id ${args.id} deleted.`,
-          },
-        ],
-      };
+        const config = getGhostApiConfig();
+        if (!config) {
+            return { isError: true, content: [{ type: "text", text: "Ghost API not configured" }] };
+        }
+        try {
+            const token = generateGhostAdminToken(config.key);
+            const url = `${config.url}/ghost/api/admin/webhooks/${args.id}/`;
+            const headers = {
+                'Authorization': `Ghost ${token}`
+            };
+            await axios.delete(url, { headers });
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: `Webhook with id ${args.id} deleted.`,
+                    },
+                ],
+            };
+        } catch (error: any) {
+            const status = error?.response?.status ?? error?.status ?? "unknown";
+            const body = error?.response?.data ?? error?.data ?? error?.message ?? String(error);
+            const bodyText = typeof body === "string" ? body : JSON.stringify(body, null, 2);
+            return {
+                isError: true,
+                content: [
+                    {
+                        type: "text",
+                        text: `webhooks_delete failed. status=${status}\n${bodyText}`,
+                    },
+                ],
+            };
+        }
     }
   );
 }

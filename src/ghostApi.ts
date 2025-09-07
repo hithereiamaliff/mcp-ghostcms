@@ -1,5 +1,6 @@
 import GhostAdminAPI from '@tryghost/admin-api';
 import { GHOST_API_URL, GHOST_ADMIN_API_KEY, GHOST_API_VERSION } from './config.js';
+import jwt from 'jsonwebtoken';
 
 // Live binding that tools import. Initialized via env fallback or at runtime via initGhostApi().
 export let ghostApiClient: any;
@@ -31,6 +32,16 @@ export function getGhostApiConfig(): GhostApiConfig | null {
     return currentConfig;
 }
 
+export function generateGhostAdminToken(apiKey: string): string {
+    const [id, secret] = apiKey.split(':');
+    const token = jwt.sign({}, Buffer.from(secret, 'hex'), {
+        keyid: id,
+        algorithm: 'ES256',
+        expiresIn: '5m',
+        audience: `/admin/`
+    });
+    return token;
+}
 
 // You can add helper functions here to wrap API calls and handle errors
 // For example:
