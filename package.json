@@ -1,5 +1,5 @@
 {
-    "name": "@fanyangmeng/ghost-mcp",
+    "name": "@hithereiamaliff/ghost-mcp",
     "version": "0.1.0",
     "description": "MCP server for using the Ghost API",
     "main": "build/server.js",
@@ -23,7 +23,7 @@
         "access": "public"
     },
     "keywords": [],
-    "author": "Fanyang Meng (https://mfydev.link)",
+    "author": "hithereiamaliff",
     "license": "ISC",
     "type": "module",
     "dependencies": {

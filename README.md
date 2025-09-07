@@ -1,20 +1,19 @@
 # Ghost MCP Server
 
-> This is a fork of [MFYDev/ghost-mcp](https://github.com/MFYDev/ghost-mcp) with enhanced error handling, improved configuration, and diagnostic tools.
+> This is a fork of [MFYDev/ghost-mcp](https://github.com/MFYDev/ghost-mcp), now maintained and improved by [@hithereiamaliff](https://github.com/hithereiamaliff/mcp-ghostcms).
 
-A Model Context Protocol (MCP) server for interacting with Ghost CMS through LLM interfaces like Claude. This server provides secure and comprehensive access to your Ghost blog, leveraging JWT authentication and a rich set of MCP tools for managing posts, users, members, tiers, offers, and newsletters.
+This Model Context Protocol (MCP) server enables seamless interaction with your Ghost CMS instance via Large Language Model (LLM) interfaces. It offers robust, secure access to your blog's data and administrative functions, utilizing a dual-API strategy for both content retrieval and management tasks.
 
 ![demo](./assets/ghost-mcp-demo.gif)
 
 ## Features
 
-- Secure Ghost Admin API requests with `@tryghost/admin-api`
-- Comprehensive entity access including posts, users, members, tiers, offers, and newsletters
-- Advanced search functionality with both fuzzy and exact matching options
-- Detailed, human-readable output for Ghost entities
-- Enhanced error handling with detailed status codes and response bodies
-- Runtime configuration via Smithery with proper environment variable fallbacks
-- Diagnostic tools for troubleshooting API connectivity and configuration issues
+- **Dual API Strategy**: Utilizes both the Ghost **Content API** for safely fetching public data and the **Admin API** for management tasks.
+- **Secure API Requests**: Uses `@tryghost/content-api` for reading posts and `@tryghost/admin-api` for all other operations.
+- **Comprehensive Entity Access**: Manages posts, users, members, tiers, offers, and newsletters.
+- **Enhanced Error Handling**: Provides detailed status codes and response bodies.
+- **Modern Transport**: Exclusively uses the Streamable HTTP transport, with all deprecated STDIO logic removed.
+- **Diagnostic Tools**: Includes tools for troubleshooting API connectivity and configuration.
 
 ## Usage
 
@@ -22,9 +21,10 @@ A Model Context Protocol (MCP) server for interacting with Ghost CMS through LLM
 
 This MCP server requires the following configuration:
 
-- **GHOST_API_URL**: Your Ghost site URL (domain only, no path), e.g., `https://yourblog.com`
-- **GHOST_ADMIN_API_KEY**: Your Ghost Admin API key in `id:secret` format (from Ghost Admin → Settings → Integrations)
-- **GHOST_API_VERSION**: Ghost API version (`v5.0` for Ghost 5.x, `v6.0` for Ghost 6.x)
+- **GHOST_API_URL**: Your Ghost site URL (domain only, no path), e.g., `https://yourghostbloginstance.com`
+- **GHOST_ADMIN_API_KEY**: Your Ghost Admin API key in `id:secret` format (from Ghost Admin → Settings → Integrations).
+- **GHOST_CONTENT_API_KEY**: Your Ghost Content API key (from Ghost Admin → Settings → Integrations).
+- **GHOST_API_VERSION**: Ghost API version (`v5.0` for Ghost 5.x, `v6.0` for Ghost 6.x).
 
 ### Running with Smithery
 
@@ -43,13 +43,13 @@ To use this with MCP clients like Claude Desktop, add the following to your `cla
 ```json
 {
   "mcpServers": {
-      "ghost-mcp": {
+      "mcp-ghostcms": {
         "command": "npx",
-        "args": ["-y", "@fanyangmeng/ghost-mcp"],
+        "args": ["-y", "@hithereiamaliff/ghost-mcp"],
         "env": {
-            "GHOST_API_URL": "https://yourblog.com",
+            "GHOST_API_URL": "https://yourghostbloginstance.com",
             "GHOST_ADMIN_API_KEY": "your_admin_api_key",
-            "GHOST_API_VERSION": "v5.0"
+            "GHOST_API_VERSION": "v6.0"
         }
       }
     }
@@ -73,7 +73,7 @@ The following Ghost CMS resources are available through this MCP server:
 
 ## Available Tools
 
-This MCP server exposes a comprehensive set of tools for managing your Ghost CMS via the Model Context Protocol. Each resource provides a set of operations, typically including browsing, reading, creating, editing, and deleting entities. Below is a summary of the available tools:
+This MCP server provides a wide array of tools to manage your Ghost CMS. These tools are exposed via the Model Context Protocol and allow for a full range of CRUD (Create, Read, Update, Delete) operations on your blog's resources. Below is an overview of the available toolset:
 
 ### Posts
 - **Browse Posts**: List posts with optional filters, pagination, and ordering.
@@ -164,9 +164,9 @@ These improvements make it much easier to diagnose common issues like:
 2. Install dependencies: `npm install`
 3. Create a `.env` file with your Ghost configuration:
    ```
-   GHOST_API_URL=https://yourblog.com
+   GHOST_API_URL=https://yourghostbloginstance.com
    GHOST_ADMIN_API_KEY=your_admin_api_key
-   GHOST_API_VERSION=v5.0
+   GHOST_API_VERSION=v6.0
    ```
 4. Build the project: `npm run build`
 5. Start the dev server: `npm run dev`
