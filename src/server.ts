@@ -35,7 +35,17 @@ export { configSchema };
  * This is the main entry point for Smithery
  */
 export default function createServer({ config }: { config: ConfigType }) {
-    // API clients are lazily initialized on first tool use
+    // Initialize Ghost API client with Smithery-provided runtime config
+    initGhostApi({
+        url: config.GHOST_API_URL,
+        key: config.GHOST_ADMIN_API_KEY,
+        version: config.GHOST_API_VERSION,
+    });
+    initGhostContentApi({
+        url: config.GHOST_API_URL,
+        key: config.GHOST_CONTENT_API_KEY,
+        version: config.GHOST_API_VERSION,
+    });
     // Create an MCP server instance
     const server = new McpServer({
         name: "ghost-mcp-ts",
