@@ -22,13 +22,13 @@ This MCP server is available through two deployment methods:
 Install directly from npm:
 
 ```bash
-npm install -g @hithereiamaliff/mcp-ghostcms
+npm install -g mcp-ghostcms
 ```
 
 Or use with npx (no installation required):
 
 ```bash
-npx @hithereiamaliff/mcp-ghostcms
+npx mcp-ghostcms
 ```
 
 #### Using with Claude Desktop
@@ -40,7 +40,7 @@ To use with MCP clients like Claude Desktop, add the following to your `claude_d
   "mcpServers": {
       "mcp-ghostcms": {
         "command": "npx",
-        "args": ["-y", "@hithereiamaliff/mcp-ghostcms"],
+        "args": ["-y", "mcp-ghostcms"],
         "env": {
             "GHOST_API_URL": "https://yourghostbloginstance.com",
             "GHOST_ADMIN_API_KEY": "your_admin_api_key",
