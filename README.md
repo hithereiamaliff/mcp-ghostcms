@@ -13,29 +13,27 @@ This Model Context Protocol (MCP) server provides a powerful and flexible way to
 - **Modern Transport**: Exclusively uses the Streamable HTTP transport, with all deprecated STDIO logic removed.
 - **Diagnostic Tools**: Includes tools for troubleshooting API connectivity and configuration.
 
-## Usage
+## Installation & Usage
 
-### Configuration
+This MCP server is available through two deployment methods:
 
-This MCP server requires the following configuration:
+### Method 1: NPM Package (Recommended for MCP Clients)
 
-- **GHOST_API_URL**: Your Ghost site URL (domain only, no path), e.g., `https://yourghostbloginstance.com`
-- **GHOST_ADMIN_API_KEY**: Your Ghost Admin API key in `id:secret` format (from Ghost Admin → Settings → Integrations).
-- **GHOST_API_VERSION**: Ghost API version (`v5.0` for Ghost 5.x, `v6.0` for Ghost 6.x).
-
-### Running with Smithery
-
-The recommended way to run this MCP server is with Smithery:
+Install directly from npm:
 
 ```bash
-npm run dev
+npm install -g @hithereiamaliff/mcp-ghostcms
 ```
 
-This will start the server on port 8181 and open the Smithery Playground in your browser.
+Or use with npx (no installation required):
 
-### Using with Claude Desktop
+```bash
+npx @hithereiamaliff/mcp-ghostcms
+```
 
-To use this with MCP clients like Claude Desktop, add the following to your `claude_desktop_config.json`:
+#### Using with Claude Desktop
+
+To use with MCP clients like Claude Desktop, add the following to your `claude_desktop_config.json`:
 
 ```json
 {
@@ -52,6 +50,32 @@ To use this with MCP clients like Claude Desktop, add the following to your `cla
     }
 }
 ```
+
+### Method 2: Smithery Cloud Platform
+
+Deploy and run on Smithery's cloud platform:
+
+[![smithery badge](https://smithery.ai/badge/@hithereiamaliff/mcp-ghostcms)](https://smithery.ai/server/@hithereiamaliff/mcp-ghostcms)
+
+Or for local development with Smithery:
+
+```bash
+git clone <this-repo>
+cd ghost-mcp
+npm install
+npm run dev
+```
+
+This will start the server on port 8080 and open the Smithery Playground in your browser.
+
+### Configuration
+
+This MCP server requires the following configuration:
+
+- **GHOST_API_URL**: Your Ghost site URL (domain only, no path), e.g., `https://yourghostbloginstance.com`
+- **GHOST_ADMIN_API_KEY**: Your Ghost Admin API key in `id:secret` format (from Ghost Admin → Settings → Integrations).
+- **GHOST_API_VERSION**: Ghost API version (`v5.0` for Ghost 5.x, `v6.0` for Ghost 6.x).
+- **GHOST_CONTENT_API_KEY** (optional): Your Ghost Content API key for read-only operations.
 
 ## Available Resources
 

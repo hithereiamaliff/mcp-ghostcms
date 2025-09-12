@@ -1,22 +1,24 @@
 {
-    "name": "@hithereiamaliff/ghost-mcp",
+    "name": "@hithereiamaliff/mcp-ghostcms",
     "version": "0.1.0",
     "description": "MCP server for using the Ghost API",
-    "main": "build/server.js",
+    "main": "build/cli.js",
     "module": "src/server.ts",
     "bin": {
-        "ghost-mcp": "build/server.js"
+        "ghost-mcp": "build/cli.js"
     },
     "files": [
-        "build/"
+        "build/",
+        ".smithery/"
     ],
     "scripts": {
         "dev": "npx @smithery/cli dev",
-        "build": "npm run build:http",
-        "build:http": "npx @smithery/cli build",
-        "start": "npm run start:http",
-        "start:http": "node .smithery/index.cjs",
-        "prepare": "npm run build",
+        "build": "npm run build:npm && npm run build:smithery",
+        "build:npm": "tsc",
+        "build:smithery": "npx @smithery/cli build",
+        "start": "npm run start:smithery",
+        "start:smithery": "node .smithery/index.cjs",
+        "prepare": "npm run build:npm",
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "publishConfig": {
