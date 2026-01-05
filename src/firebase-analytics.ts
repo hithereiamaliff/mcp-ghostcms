@@ -63,9 +63,32 @@ class FirebaseAnalytics {
     if (!this.initialized) return;
 
     try {
+      // Sanitize keys for Firebase (replace invalid characters)
+      const sanitizeKey = (key: string): string => {
+        return key.replace(/[.#$\/\[\]]/g, '_');
+      };
+
+      const sanitizeObject = (obj: Record<string, any>): Record<string, any> => {
+        const sanitized: Record<string, any> = {};
+        for (const [key, value] of Object.entries(obj)) {
+          sanitized[sanitizeKey(key)] = value;
+        }
+        return sanitized;
+      };
+
+      const sanitizedAnalytics = {
+        ...analytics,
+        requestsByEndpoint: sanitizeObject(analytics.requestsByEndpoint),
+        toolCalls: sanitizeObject(analytics.toolCalls),
+        clientsByIp: sanitizeObject(analytics.clientsByIp),
+        clientsByUserAgent: sanitizeObject(analytics.clientsByUserAgent),
+        hourlyRequests: sanitizeObject(analytics.hourlyRequests),
+        requestsByMethod: sanitizeObject(analytics.requestsByMethod),
+      };
+
       const ref = this.db.ref(`mcp-analytics/${this.serverName}`);
       await ref.set({
-        ...analytics,
+        ...sanitizedAnalytics,
         lastUpdated: admin.database.ServerValue.TIMESTAMP,
         _timestamp: new Date().toISOString()
       });
