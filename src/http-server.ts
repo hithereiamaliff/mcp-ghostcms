@@ -560,9 +560,18 @@ app.all('/mcp', async (req: Request, res: Response) => {
   
   try {
     // Extract Ghost credentials from query parameters
-    const ghostUrl = req.query.url as string || DEFAULT_GHOST_API_URL;
+    let ghostUrl = req.query.url as string || DEFAULT_GHOST_API_URL;
     const ghostKey = req.query.key as string || DEFAULT_GHOST_ADMIN_API_KEY;
     const ghostVersion = req.query.version as string || DEFAULT_GHOST_API_VERSION;
+    
+    // Debug logging
+    console.log(`[DEBUG] Received URL param: ${ghostUrl}`);
+    
+    // Auto-add https:// if missing protocol
+    if (ghostUrl && !ghostUrl.match(/^https?:\/\//)) {
+      ghostUrl = `https://${ghostUrl}`;
+      console.log(`[DEBUG] Added https:// prefix: ${ghostUrl}`);
+    }
     
     // Validate required parameters
     if (!ghostUrl || !ghostKey) {
