@@ -32,6 +32,9 @@ USER mcp
 # Create data directory for analytics
 RUN mkdir -p /app/data
 
+# Create credentials directory (will be mounted as volume)
+RUN mkdir -p /app/.credentials
+
 # Expose port for HTTP server
 EXPOSE 8080
 

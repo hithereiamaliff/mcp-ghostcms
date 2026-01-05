@@ -12,6 +12,7 @@ import fs from 'fs';
 import path from 'path';
 import { McpServer, ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { FirebaseAnalytics } from './firebase-analytics.js';
 import { initGhostApi } from './ghostApi.js';
 import {
     handleUserResource,
@@ -175,12 +176,32 @@ function getUptime(): string {
   return `${minutes}m`;
 }
 
-// Load analytics on startup
-loadAnalytics();
+// Initialize Firebase Analytics
+const firebaseAnalytics = new FirebaseAnalytics('mcp-ghostcms');
 
-// Periodic save
-const saveInterval = setInterval(() => {
-  saveAnalytics();
+// Load analytics on startup (try Firebase first, then local)
+async function initializeAnalytics() {
+  if (firebaseAnalytics.isInitialized()) {
+    const firebaseData = await firebaseAnalytics.loadAnalytics();
+    if (firebaseData) {
+      analytics = firebaseData;
+      console.log('📊 Loaded analytics from Firebase');
+      return;
+    }
+  }
+  
+  // Fallback to local file
+  loadAnalytics();
+}
+
+initializeAnalytics();
+
+// Periodic save (to both Firebase and local)
+const saveInterval = setInterval(async () => {
+  saveAnalytics(); // Local backup
+  if (firebaseAnalytics.isInitialized()) {
+    await firebaseAnalytics.saveAnalytics(analytics); // Firebase primary
+  }
 }, SAVE_INTERVAL_MS);
 
 // Create and configure MCP server with user-provided credentials
@@ -612,10 +633,13 @@ app.all('/mcp', async (req: Request, res: Response) => {
 });
 
 // Graceful shutdown
-function gracefulShutdown(signal: string) {
+async function gracefulShutdown(signal: string) {
   console.log(`\nReceived ${signal}, shutting down gracefully...`);
   clearInterval(saveInterval);
-  saveAnalytics();
+  saveAnalytics(); // Save to local file
+  if (firebaseAnalytics.isInitialized()) {
+    await firebaseAnalytics.saveAnalytics(analytics); // Save to Firebase
+  }
   console.log('Analytics saved. Goodbye!');
   process.exit(0);
 }
