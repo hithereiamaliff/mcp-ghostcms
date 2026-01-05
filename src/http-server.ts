@@ -43,10 +43,11 @@ const ANALYTICS_FILE = path.join(ANALYTICS_DATA_DIR, 'analytics.json');
 const SAVE_INTERVAL_MS = 60000; // Save every 60 seconds
 const MAX_RECENT_CALLS = 100;
 
-// Ghost API configuration from environment
-const GHOST_API_URL = process.env.GHOST_API_URL || '';
-const GHOST_ADMIN_API_KEY = process.env.GHOST_ADMIN_API_KEY || '';
-const GHOST_API_VERSION = process.env.GHOST_API_VERSION || 'v5.0';
+// Ghost API configuration - will be provided per-request via query params
+// Environment variables are optional fallbacks for testing
+const DEFAULT_GHOST_API_URL = process.env.GHOST_API_URL || '';
+const DEFAULT_GHOST_ADMIN_API_KEY = process.env.GHOST_ADMIN_API_KEY || '';
+const DEFAULT_GHOST_API_VERSION = process.env.GHOST_API_VERSION || 'v5.0';
 
 // Analytics interface
 interface Analytics {
@@ -182,17 +183,17 @@ const saveInterval = setInterval(() => {
   saveAnalytics();
 }, SAVE_INTERVAL_MS);
 
-// Create and configure MCP server
-function createMcpServer() {
-  // Initialize Ghost API client
+// Create and configure MCP server with user-provided credentials
+function createMcpServer(ghostUrl: string, ghostKey: string, ghostVersion: string = 'v5.0') {
+  // Initialize Ghost API client with user-provided credentials
   initGhostApi({
-    url: GHOST_API_URL,
-    key: GHOST_ADMIN_API_KEY,
-    version: GHOST_API_VERSION,
+    url: ghostUrl,
+    key: ghostKey,
+    version: ghostVersion,
   });
   
-  const keyId = (GHOST_ADMIN_API_KEY || '').split(':')[0] || 'unknown';
-  console.log(`[ghost-mcp] Using Ghost Admin API: url=${GHOST_API_URL}, version=${GHOST_API_VERSION}, keyId=${keyId}`);
+  const keyId = (ghostKey || '').split(':')[0] || 'unknown';
+  console.log(`[ghost-mcp] Using Ghost Admin API: url=${ghostUrl}, version=${ghostVersion}, keyId=${keyId}`);
 
   const server = new McpServer({
     name: 'ghost-mcp-ts',
@@ -240,8 +241,8 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],
 }));
 
-// Create MCP server
-const mcpServer = createMcpServer();
+// Store MCP servers per session (each with different Ghost credentials)
+const mcpServers = new Map<string, McpServer>();
 
 // Store transports for session management
 const transports = new Map<string, StreamableHTTPServerTransport>();
@@ -267,9 +268,17 @@ app.get('/', (req: Request, res: Response) => {
     version: '0.1.0',
     description: 'MCP server for Ghost CMS Admin API',
     transport: 'streamable-http',
+    usage: {
+      mcpUrl: 'https://mcp.techmavie.digital/ghostcms/mcp?url=YOUR_GHOST_URL&key=YOUR_ADMIN_KEY',
+      parameters: {
+        url: 'Your Ghost site URL (e.g., https://your-site.com)',
+        key: 'Your Ghost Admin API key',
+        version: 'Ghost API version (optional, default: v5.0)'
+      }
+    },
     endpoints: {
       health: '/health',
-      mcp: '/mcp',
+      mcp: '/mcp?url=YOUR_GHOST_URL&key=YOUR_ADMIN_KEY',
       analytics: '/analytics',
       dashboard: '/analytics/dashboard',
     },
@@ -550,9 +559,31 @@ app.all('/mcp', async (req: Request, res: Response) => {
   }
   
   try {
-    // Get or create session ID
-    const sessionId = req.headers['mcp-session-id'] as string || 'default';
+    // Extract Ghost credentials from query parameters
+    const ghostUrl = req.query.url as string || DEFAULT_GHOST_API_URL;
+    const ghostKey = req.query.key as string || DEFAULT_GHOST_ADMIN_API_KEY;
+    const ghostVersion = req.query.version as string || DEFAULT_GHOST_API_VERSION;
     
+    // Validate required parameters
+    if (!ghostUrl || !ghostKey) {
+      return res.status(400).json({ 
+        error: 'Missing required parameters',
+        message: 'Please provide Ghost API credentials via query parameters: ?url=YOUR_GHOST_URL&key=YOUR_ADMIN_KEY',
+        example: '/mcp?url=https://your-ghost-site.com&key=your-admin-api-key'
+      });
+    }
+    
+    // Create unique session ID based on credentials
+    const sessionId = `${ghostUrl}:${ghostKey.split(':')[0]}`;
+    
+    // Get or create MCP server for this session
+    let mcpServer = mcpServers.get(sessionId);
+    if (!mcpServer) {
+      mcpServer = createMcpServer(ghostUrl, ghostKey, ghostVersion);
+      mcpServers.set(sessionId, mcpServer);
+    }
+    
+    // Get or create transport for this session
     let transport = transports.get(sessionId);
     if (!transport) {
       transport = new StreamableHTTPServerTransport({
@@ -566,7 +597,7 @@ app.all('/mcp', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('MCP request error:', error);
     if (!res.headersSent) {
-      res.status(500).json({ error: 'Internal server error' });
+      res.status(500).json({ error: 'Internal server error', details: String(error) });
     }
   }
 });
