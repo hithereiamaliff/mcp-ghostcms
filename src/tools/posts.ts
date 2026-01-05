@@ -60,6 +60,8 @@ export function registerPostTools(server: McpServer) {
         };
       } catch (error: any) {
         const status = error?.response?.status ?? error?.status ?? "unknown";
+        const statusText = error?.response?.statusText ?? "";
+        const url = error?.config?.url ?? error?.request?.url ?? "unknown URL";
         const body = error?.response?.data ?? error?.data ?? error?.message ?? String(error);
         const bodyText = typeof body === "string" ? body : JSON.stringify(body, null, 2);
         return {
@@ -67,7 +69,7 @@ export function registerPostTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `posts_browse failed. status=${status}\n${bodyText}`,
+              text: `posts_browse failed. status=${status} ${statusText}\nURL: ${url}\n${bodyText}`,
             },
           ],
         };
@@ -101,6 +103,8 @@ export function registerPostTools(server: McpServer) {
             };
         } catch (error: any) {
         const status = error?.response?.status ?? error?.status ?? "unknown";
+        const statusText = error?.response?.statusText ?? "";
+        const url = error?.config?.url ?? error?.request?.url ?? "unknown URL";
         const body = error?.response?.data ?? error?.data ?? error?.message ?? String(error);
         const bodyText = typeof body === "string" ? body : JSON.stringify(body, null, 2);
         return {
@@ -108,7 +112,7 @@ export function registerPostTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `posts_read failed. status=${status}\n${bodyText}`,
+              text: `posts_read failed. status=${status} ${statusText}\nURL: ${url}\n${bodyText}`,
             },
           ],
         };
@@ -142,6 +146,8 @@ export function registerPostTools(server: McpServer) {
             };
         } catch (error: any) {
         const status = error?.response?.status ?? error?.status ?? "unknown";
+        const statusText = error?.response?.statusText ?? "";
+        const url = error?.config?.url ?? error?.request?.url ?? "unknown URL";
         const body = error?.response?.data ?? error?.data ?? error?.message ?? String(error);
         const bodyText = typeof body === "string" ? body : JSON.stringify(body, null, 2);
         return {
@@ -149,7 +155,7 @@ export function registerPostTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `posts_add failed. status=${status}\n${bodyText}`,
+              text: `posts_add failed. status=${status} ${statusText}\nURL: ${url}\n${bodyText}`,
             },
           ],
         };
@@ -183,6 +189,8 @@ export function registerPostTools(server: McpServer) {
             };
         } catch (error: any) {
         const status = error?.response?.status ?? error?.status ?? "unknown";
+        const statusText = error?.response?.statusText ?? "";
+        const url = error?.config?.url ?? error?.request?.url ?? "unknown URL";
         const body = error?.response?.data ?? error?.data ?? error?.message ?? String(error);
         const bodyText = typeof body === "string" ? body : JSON.stringify(body, null, 2);
         return {
@@ -190,7 +198,7 @@ export function registerPostTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `posts_edit failed. status=${status}\n${bodyText}`,
+              text: `posts_edit failed. status=${status} ${statusText}\nURL: ${url}\n${bodyText}`,
             },
           ],
         };
@@ -224,6 +232,8 @@ export function registerPostTools(server: McpServer) {
             };
         } catch (error: any) {
         const status = error?.response?.status ?? error?.status ?? "unknown";
+        const statusText = error?.response?.statusText ?? "";
+        const url = error?.config?.url ?? error?.request?.url ?? "unknown URL";
         const body = error?.response?.data ?? error?.data ?? error?.message ?? String(error);
         const bodyText = typeof body === "string" ? body : JSON.stringify(body, null, 2);
         return {
@@ -231,7 +241,7 @@ export function registerPostTools(server: McpServer) {
           content: [
             {
               type: "text",
-              text: `posts_delete failed. status=${status}\n${bodyText}`,
+              text: `posts_delete failed. status=${status} ${statusText}\nURL: ${url}\n${bodyText}`,
             },
           ],
         };
