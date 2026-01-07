@@ -248,28 +248,44 @@ If you encounter authentication or "Resource not found" errors:
 
 #### MCP Streamable HTTP Requirements
 
-The MCP endpoint accepts standard HTTP requests with any Accept header (including `*/*`, `text/event-stream`, or `application/json`). Most HTTP clients and MCP clients work out of the box.
+This server implements the MCP Streamable HTTP transport with proper session management and Accept header handling. The server automatically injects `text/event-stream` into Accept headers and creates isolated transport instances per request to prevent session conflicts.
 
-**Testing the endpoint:**
+**Testing the endpoint with proper MCP initialization:**
 ```bash
-# Works - curl sends Accept: */* by default
-curl "https://mcp.techmavie.digital/ghostcms/mcp?url=https://your-site.com&key=YOUR_KEY"
-
-# Also works - explicit Accept header
-curl -H "Accept: text/event-stream" \
+# Test MCP initialization (proper way to test)
+curl -s -X POST \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}' \
   "https://mcp.techmavie.digital/ghostcms/mcp?url=https://your-site.com&key=YOUR_KEY"
+
+# Expected response (SSE format):
+# event: message
+# data: {"result":{"protocolVersion":"2024-11-05","capabilities":{...},"serverInfo":{...}},"jsonrpc":"2.0","id":1}
 ```
 
+**Note:** Simple GET/POST requests without MCP initialization will return protocol errors like `"Bad Request: Server not initialized"` - this is expected behavior. The endpoint requires proper MCP protocol handshake.
+
 **For MCP Clients (Claude Desktop, Claude iOS, Claude Code):**
-- MCP clients automatically include the required headers
+- MCP clients automatically handle the initialization protocol and session management
 - Ensure your MCP URL is correctly formatted in your client configuration
 - For Claude iOS, use the Connectors feature with the full MCP URL including query parameters
 - For Claude Code, add the server to your MCP settings with type `streamable-http`
 
-**Testing with PowerShell:**
-```powershell
-Invoke-WebRequest -Uri "https://mcp.techmavie.digital/ghostcms/mcp?url=https://your-site.com&key=YOUR_KEY"
-```
+**Session Management:**
+- The server creates a new transport instance for each HTTP request (stateless pattern)
+- Each client connection gets a unique session ID automatically
+- Multiple clients can connect simultaneously without session conflicts
+- Sessions are automatically cleaned up after responses are sent
+
+**Common Errors and Solutions:**
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| `"Not Acceptable: Client must accept text/event-stream"` | Old server version | Update to latest version - this is fixed |
+| `"Bad Request: Server not initialized"` | Testing without MCP protocol | Use proper MCP initialization (see example above) |
+| `"Mcp-Session-Id header is required"` | Old server version with session conflicts | Update to latest version - this is fixed |
+| `"Server already initialized"` | Old server version reusing transports | Update to latest version - this is fixed |
 
 ## VPS Deployment
 
