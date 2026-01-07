@@ -588,35 +588,15 @@ app.post('/analytics/import', (req: Request, res: Response) => {
   }
 });
 
-// Middleware to validate MCP Streamable HTTP requirements
-function validateMcpRequest(req: Request, res: Response, next: NextFunction) {
-  const acceptHeader = req.headers['accept'] || '';
-  
-  // MCP Streamable HTTP requires Accept header with text/event-stream, application/json, or wildcard
-  // Accept */* as it's a wildcard that includes all content types
-  const hasValidAccept = acceptHeader.includes('text/event-stream') || 
-                         acceptHeader.includes('application/json') ||
-                         acceptHeader.includes('*/*') ||
-                         acceptHeader === '*';
-  
-  if (!hasValidAccept && acceptHeader !== '') {
-    return res.status(406).json({
-      error: 'Not Acceptable',
-      message: 'MCP Streamable HTTP requires Accept header with text/event-stream, application/json, or */*',
-      documentation: 'https://modelcontextprotocol.io/specification/2025-03-26/basic/transports',
-      example: 'curl -H "Accept: text/event-stream" "https://mcp.techmavie.digital/ghostcms/mcp?url=YOUR_URL&key=YOUR_KEY"',
-      receivedHeaders: {
-        accept: acceptHeader || '(missing)',
-        contentType: req.headers['content-type'] || '(missing)',
-      }
-    });
-  }
-  
-  next();
-}
-
 // MCP endpoint - handle all MCP protocol requests
-app.all('/mcp', validateMcpRequest, async (req: Request, res: Response) => {
+app.all('/mcp', async (req: Request, res: Response) => {
+  // Fix Accept header for MCP SDK compatibility
+  // The SDK requires text/event-stream, but we want to accept */* and other common headers
+  const acceptHeader = req.headers['accept'] || '';
+  if (!acceptHeader.includes('text/event-stream')) {
+    // Inject text/event-stream into Accept header so SDK accepts the request
+    req.headers['accept'] = acceptHeader ? `${acceptHeader}, text/event-stream` : 'text/event-stream';
+  }
   trackRequest(req, '/mcp');
   
   // Track tool calls
