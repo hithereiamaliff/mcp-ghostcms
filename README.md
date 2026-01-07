@@ -248,33 +248,27 @@ If you encounter authentication or "Resource not found" errors:
 
 #### MCP Streamable HTTP Requirements
 
-When testing the MCP endpoint directly (e.g., with curl), you **must** include the `Accept: text/event-stream` header. This is required by the [MCP Streamable HTTP specification](https://modelcontextprotocol.io/specification/2025-03-26/basic/transports).
+The MCP endpoint accepts standard HTTP requests with any Accept header (including `*/*`, `text/event-stream`, or `application/json`). Most HTTP clients and MCP clients work out of the box.
 
-**Common Error:**
-```json
-{"jsonrpc":"2.0","error":{"code":-32000,"message":"Not Acceptable: Client must accept text/event-stream"},"id":null}
-```
-
-**Solution:**
+**Testing the endpoint:**
 ```bash
-# Correct - includes Accept header
+# Works - curl sends Accept: */* by default
+curl "https://mcp.techmavie.digital/ghostcms/mcp?url=https://your-site.com&key=YOUR_KEY"
+
+# Also works - explicit Accept header
 curl -H "Accept: text/event-stream" \
   "https://mcp.techmavie.digital/ghostcms/mcp?url=https://your-site.com&key=YOUR_KEY"
-
-# Wrong - missing Accept header
-curl "https://mcp.techmavie.digital/ghostcms/mcp?url=https://your-site.com&key=YOUR_KEY"
 ```
 
-**For MCP Clients (Claude Desktop, Claude iOS):**
+**For MCP Clients (Claude Desktop, Claude iOS, Claude Code):**
 - MCP clients automatically include the required headers
 - Ensure your MCP URL is correctly formatted in your client configuration
 - For Claude iOS, use the Connectors feature with the full MCP URL including query parameters
+- For Claude Code, add the server to your MCP settings with type `streamable-http`
 
 **Testing with PowerShell:**
 ```powershell
-Invoke-WebRequest -Uri "https://mcp.techmavie.digital/ghostcms/mcp?url=https://your-site.com&key=YOUR_KEY" `
-  -Headers @{"Accept"="text/event-stream"} `
-  -Method GET
+Invoke-WebRequest -Uri "https://mcp.techmavie.digital/ghostcms/mcp?url=https://your-site.com&key=YOUR_KEY"
 ```
 
 ## VPS Deployment

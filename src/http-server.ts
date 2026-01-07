@@ -592,11 +592,17 @@ app.post('/analytics/import', (req: Request, res: Response) => {
 function validateMcpRequest(req: Request, res: Response, next: NextFunction) {
   const acceptHeader = req.headers['accept'] || '';
   
-  // MCP Streamable HTTP requires Accept header with text/event-stream
-  if (!acceptHeader.includes('text/event-stream') && !acceptHeader.includes('application/json')) {
+  // MCP Streamable HTTP requires Accept header with text/event-stream, application/json, or wildcard
+  // Accept */* as it's a wildcard that includes all content types
+  const hasValidAccept = acceptHeader.includes('text/event-stream') || 
+                         acceptHeader.includes('application/json') ||
+                         acceptHeader.includes('*/*') ||
+                         acceptHeader === '*';
+  
+  if (!hasValidAccept && acceptHeader !== '') {
     return res.status(406).json({
       error: 'Not Acceptable',
-      message: 'MCP Streamable HTTP requires Accept header with text/event-stream or application/json',
+      message: 'MCP Streamable HTTP requires Accept header with text/event-stream, application/json, or */*',
       documentation: 'https://modelcontextprotocol.io/specification/2025-03-26/basic/transports',
       example: 'curl -H "Accept: text/event-stream" "https://mcp.techmavie.digital/ghostcms/mcp?url=YOUR_URL&key=YOUR_KEY"',
       receivedHeaders: {
