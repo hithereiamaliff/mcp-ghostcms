@@ -256,11 +256,29 @@ function createMcpServer(ghostUrl: string, ghostKey: string, ghostVersion: strin
 // Create Express app
 const app = express();
 app.use(express.json());
+
+// Enhanced CORS configuration for Claude iOS and other MCP clients
 app.use(cors({
   origin: '*',
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],
+  methods: ['GET', 'POST', 'OPTIONS', 'PUT', 'DELETE'],
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'X-API-Key',
+    'Accept',
+    'Accept-Encoding',
+    'Cache-Control',
+    'Connection',
+    'User-Agent',
+    'X-Requested-With'
+  ],
+  exposedHeaders: ['Content-Type', 'Cache-Control'],
+  credentials: false,
+  maxAge: 86400, // 24 hours
 }));
+
+// Handle OPTIONS preflight requests explicitly
+app.options('*', cors());
 
 // Store MCP servers per session (each with different Ghost credentials)
 const mcpServers = new Map<string, McpServer>();
@@ -570,8 +588,29 @@ app.post('/analytics/import', (req: Request, res: Response) => {
   }
 });
 
+// Middleware to validate MCP Streamable HTTP requirements
+function validateMcpRequest(req: Request, res: Response, next: NextFunction) {
+  const acceptHeader = req.headers['accept'] || '';
+  
+  // MCP Streamable HTTP requires Accept header with text/event-stream
+  if (!acceptHeader.includes('text/event-stream') && !acceptHeader.includes('application/json')) {
+    return res.status(406).json({
+      error: 'Not Acceptable',
+      message: 'MCP Streamable HTTP requires Accept header with text/event-stream or application/json',
+      documentation: 'https://modelcontextprotocol.io/specification/2025-03-26/basic/transports',
+      example: 'curl -H "Accept: text/event-stream" "https://mcp.techmavie.digital/ghostcms/mcp?url=YOUR_URL&key=YOUR_KEY"',
+      receivedHeaders: {
+        accept: acceptHeader || '(missing)',
+        contentType: req.headers['content-type'] || '(missing)',
+      }
+    });
+  }
+  
+  next();
+}
+
 // MCP endpoint - handle all MCP protocol requests
-app.all('/mcp', async (req: Request, res: Response) => {
+app.all('/mcp', validateMcpRequest, async (req: Request, res: Response) => {
   trackRequest(req, '/mcp');
   
   // Track tool calls

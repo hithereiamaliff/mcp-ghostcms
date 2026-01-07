@@ -246,6 +246,37 @@ If you encounter authentication or "Resource not found" errors:
 3.  Use the `admin_site_ping` tool to verify that the Admin API endpoint is reachable.
 4.  Check the server logs for the actual configuration being used.
 
+#### MCP Streamable HTTP Requirements
+
+When testing the MCP endpoint directly (e.g., with curl), you **must** include the `Accept: text/event-stream` header. This is required by the [MCP Streamable HTTP specification](https://modelcontextprotocol.io/specification/2025-03-26/basic/transports).
+
+**Common Error:**
+```json
+{"jsonrpc":"2.0","error":{"code":-32000,"message":"Not Acceptable: Client must accept text/event-stream"},"id":null}
+```
+
+**Solution:**
+```bash
+# Correct - includes Accept header
+curl -H "Accept: text/event-stream" \
+  "https://mcp.techmavie.digital/ghostcms/mcp?url=https://your-site.com&key=YOUR_KEY"
+
+# Wrong - missing Accept header
+curl "https://mcp.techmavie.digital/ghostcms/mcp?url=https://your-site.com&key=YOUR_KEY"
+```
+
+**For MCP Clients (Claude Desktop, Claude iOS):**
+- MCP clients automatically include the required headers
+- Ensure your MCP URL is correctly formatted in your client configuration
+- For Claude iOS, use the Connectors feature with the full MCP URL including query parameters
+
+**Testing with PowerShell:**
+```powershell
+Invoke-WebRequest -Uri "https://mcp.techmavie.digital/ghostcms/mcp?url=https://your-site.com&key=YOUR_KEY" `
+  -Headers @{"Accept"="text/event-stream"} `
+  -Method GET
+```
+
 ## VPS Deployment
 
 This MCP server includes full support for self-hosted VPS deployment with Docker, Nginx, and GitHub Actions auto-deployment.
