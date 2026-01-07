@@ -280,11 +280,8 @@ app.use(cors({
 // Handle OPTIONS preflight requests explicitly
 app.options('*', cors());
 
-// Store MCP servers per session (each with different Ghost credentials)
+// Store MCP servers per Ghost credentials (reused across requests)
 const mcpServers = new Map<string, McpServer>();
-
-// Store transports for session management
-const transports = new Map<string, StreamableHTTPServerTransport>();
 
 // Health check endpoint
 app.get('/health', (req: Request, res: Response) => {
@@ -628,26 +625,28 @@ app.all('/mcp', async (req: Request, res: Response) => {
       });
     }
     
-    // Create unique session ID based on credentials
-    const sessionId = `${ghostUrl}:${ghostKey.split(':')[0]}`;
+    // Create unique key for Ghost credentials (for server instance reuse)
+    const credentialsKey = `${ghostUrl}:${ghostKey.split(':')[0]}`;
     
-    // Get or create MCP server for this session
-    let mcpServer = mcpServers.get(sessionId);
+    // Get or create MCP server for these credentials
+    let mcpServer = mcpServers.get(credentialsKey);
     if (!mcpServer) {
       mcpServer = createMcpServer(ghostUrl, ghostKey, ghostVersion);
-      mcpServers.set(sessionId, mcpServer);
+      mcpServers.set(credentialsKey, mcpServer);
     }
     
-    // Get or create transport for this session
-    let transport = transports.get(sessionId);
-    if (!transport) {
-      transport = new StreamableHTTPServerTransport({
-        sessionIdGenerator: () => sessionId,
-      });
-      transports.set(sessionId, transport);
-      await mcpServer.server.connect(transport);
-    }
+    // Create a NEW transport for EACH request (stateless mode)
+    // This allows multiple clients to connect without session conflicts
+    const transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: undefined, // Let SDK generate unique session IDs
+    });
     
+    // Clean up transport after response is sent
+    res.on('close', () => {
+      transport.close();
+    });
+    
+    await mcpServer.server.connect(transport);
     await transport.handleRequest(req, res, req.body);
   } catch (error) {
     console.error('MCP request error:', error);
