@@ -1,6 +1,7 @@
 # Ghost MCP Server
 
 [![smithery badge](https://smithery.ai/badge/@hithereiamaliff/mcp-ghostcms)](https://smithery.ai/server/@hithereiamaliff/mcp-ghostcms)
+
 > This is a fork of [MFYDev/ghost-mcp](https://github.com/MFYDev/ghost-mcp), now maintained and improved by [@hithereiamaliff](https://github.com/hithereiamaliff/mcp-ghostcms).
 
 This Model Context Protocol (MCP) server provides a powerful and flexible way to manage your Ghost CMS instance using Large Language Model (LLM) interfaces. It offers comprehensive and secure access to your blog's administrative functions, allowing you to automate and streamline your content management workflows.
