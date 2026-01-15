@@ -702,22 +702,76 @@ app.all('/mcp', async (req: Request, res: Response) => {
         }
       });
       
-      // Register minimal demo tools for discovery
-      demoServer.tool('ghost_list_posts', 'List all posts from Ghost CMS', {}, async () => ({
-        content: [{ type: 'text', text: 'Demo: Requires Ghost credentials' }]
-      }));
-      demoServer.tool('ghost_create_post', 'Create a new post in Ghost CMS', {}, async () => ({
-        content: [{ type: 'text', text: 'Demo: Requires Ghost credentials' }]
-      }));
-      demoServer.tool('ghost_list_members', 'List all members from Ghost CMS', {}, async () => ({
-        content: [{ type: 'text', text: 'Demo: Requires Ghost credentials' }]
-      }));
-      demoServer.tool('ghost_list_tags', 'List all tags from Ghost CMS', {}, async () => ({
-        content: [{ type: 'text', text: 'Demo: Requires Ghost credentials' }]
-      }));
-      demoServer.tool('ghost_list_newsletters', 'List all newsletters from Ghost CMS', {}, async () => ({
-        content: [{ type: 'text', text: 'Demo: Requires Ghost credentials' }]
-      }));
+      // Register ALL Ghost CMS tools for proper Smithery discovery
+      const demoHandler = async () => ({
+        content: [{ type: 'text' as const, text: 'Requires Ghost credentials via query params' }]
+      });
+      
+      // Posts tools
+      demoServer.tool('posts_browse', 'Browse and list posts with filtering and pagination', {}, demoHandler);
+      demoServer.tool('posts_read', 'Read a specific post by ID or slug', {}, demoHandler);
+      demoServer.tool('posts_add', 'Create a new post with title, content, tags, and publishing options', {}, demoHandler);
+      demoServer.tool('posts_edit', 'Edit an existing post', {}, demoHandler);
+      demoServer.tool('posts_delete', 'Delete a post by ID', {}, demoHandler);
+      
+      // Members tools
+      demoServer.tool('members_browse', 'Browse and list members with filtering and pagination', {}, demoHandler);
+      demoServer.tool('members_read', 'Read a specific member by ID or email', {}, demoHandler);
+      demoServer.tool('members_add', 'Add a new member with email and subscription details', {}, demoHandler);
+      demoServer.tool('members_edit', 'Edit an existing member', {}, demoHandler);
+      demoServer.tool('members_delete', 'Delete a member by ID', {}, demoHandler);
+      
+      // Users tools
+      demoServer.tool('users_browse', 'Browse and list staff users', {}, demoHandler);
+      demoServer.tool('users_read', 'Read a specific user by ID or slug', {}, demoHandler);
+      demoServer.tool('users_edit', 'Edit a staff user', {}, demoHandler);
+      demoServer.tool('users_delete', 'Delete a staff user', {}, demoHandler);
+      
+      // Tags tools
+      demoServer.tool('tags_browse', 'Browse and list tags', {}, demoHandler);
+      demoServer.tool('tags_read', 'Read a specific tag by ID or slug', {}, demoHandler);
+      demoServer.tool('tags_add', 'Create a new tag', {}, demoHandler);
+      demoServer.tool('tags_edit', 'Edit an existing tag', {}, demoHandler);
+      demoServer.tool('tags_delete', 'Delete a tag by ID', {}, demoHandler);
+      
+      // Tiers tools
+      demoServer.tool('tiers_browse', 'Browse and list membership tiers', {}, demoHandler);
+      demoServer.tool('tiers_read', 'Read a specific tier by ID', {}, demoHandler);
+      demoServer.tool('tiers_add', 'Create a new membership tier', {}, demoHandler);
+      demoServer.tool('tiers_edit', 'Edit an existing tier', {}, demoHandler);
+      demoServer.tool('tiers_delete', 'Delete a tier by ID', {}, demoHandler);
+      
+      // Offers tools
+      demoServer.tool('offers_browse', 'Browse and list promotional offers', {}, demoHandler);
+      demoServer.tool('offers_read', 'Read a specific offer by ID', {}, demoHandler);
+      demoServer.tool('offers_add', 'Create a new promotional offer', {}, demoHandler);
+      demoServer.tool('offers_edit', 'Edit an existing offer', {}, demoHandler);
+      demoServer.tool('offers_delete', 'Delete an offer by ID', {}, demoHandler);
+      
+      // Newsletters tools
+      demoServer.tool('newsletters_browse', 'Browse and list newsletters', {}, demoHandler);
+      demoServer.tool('newsletters_read', 'Read a specific newsletter by ID', {}, demoHandler);
+      demoServer.tool('newsletters_add', 'Create a new newsletter', {}, demoHandler);
+      demoServer.tool('newsletters_edit', 'Edit an existing newsletter', {}, demoHandler);
+      demoServer.tool('newsletters_delete', 'Delete a newsletter by ID', {}, demoHandler);
+      
+      // Invites tools
+      demoServer.tool('invites_browse', 'Browse and list staff invites', {}, demoHandler);
+      demoServer.tool('invites_add', 'Send a new staff invite', {}, demoHandler);
+      demoServer.tool('invites_delete', 'Delete/revoke an invite', {}, demoHandler);
+      
+      // Roles tools
+      demoServer.tool('roles_browse', 'Browse and list available roles', {}, demoHandler);
+      demoServer.tool('roles_read', 'Read a specific role by ID', {}, demoHandler);
+      
+      // Webhooks tools
+      demoServer.tool('webhooks_add', 'Create a new webhook', {}, demoHandler);
+      demoServer.tool('webhooks_edit', 'Edit an existing webhook', {}, demoHandler);
+      demoServer.tool('webhooks_delete', 'Delete a webhook by ID', {}, demoHandler);
+      
+      // Debug tools
+      demoServer.tool('admin_site_ping', 'Ping the Ghost Admin API to check connectivity', {}, demoHandler);
+      demoServer.tool('config_echo', 'Echo the current Ghost configuration (masked)', {}, demoHandler);
       
       const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: undefined,
