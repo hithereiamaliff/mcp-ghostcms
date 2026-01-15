@@ -616,7 +616,33 @@ app.all('/mcp', async (req: Request, res: Response) => {
       console.log(`[DEBUG] Added https:// prefix: ${ghostUrl}`);
     }
     
-    // Validate required parameters
+    // Handle Smithery discovery/scanning requests (no credentials, empty or no body)
+    // This allows Smithery to scan the server for capabilities without requiring auth
+    const hasBody = req.body && Object.keys(req.body).length > 0;
+    const hasCredentials = ghostUrl && ghostKey;
+    
+    if (!hasCredentials && !hasBody) {
+      // Return server capabilities for discovery (Smithery scanning)
+      return res.status(200).json({
+        name: 'ghost-mcp-ts',
+        version: '0.1.0',
+        description: 'MCP server for Ghost CMS Admin API - manage posts, members, newsletters, and more',
+        capabilities: {
+          tools: true,
+          resources: true,
+          prompts: true
+        },
+        authentication: {
+          type: 'query-params',
+          required: ['url', 'key'],
+          optional: ['version'],
+          description: 'Provide Ghost API credentials via query parameters',
+          example: '/mcp?url=https://your-ghost-site.com&key=your-admin-api-key'
+        }
+      });
+    }
+    
+    // Validate required parameters for actual MCP requests
     if (!ghostUrl || !ghostKey) {
       return res.status(400).json({ 
         error: 'Missing required parameters',
