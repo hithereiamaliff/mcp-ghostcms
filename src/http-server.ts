@@ -616,28 +616,39 @@ app.all('/mcp', async (req: Request, res: Response) => {
       console.log(`[DEBUG] Added https:// prefix: ${ghostUrl}`);
     }
     
-    // Handle Smithery discovery/scanning requests (no credentials, empty or no body)
-    // This allows Smithery to scan the server for capabilities without requiring auth
-    const hasBody = req.body && Object.keys(req.body).length > 0;
+    // Handle Smithery discovery/scanning requests (no credentials)
+    // Smithery sends POST with MCP initialize method to discover server capabilities
+    // We allow this without credentials so the server can be scanned
     const hasCredentials = ghostUrl && ghostKey;
+    const mcpMethod = req.body?.method;
+    const isDiscoveryRequest = !hasCredentials && (
+      !req.body || 
+      Object.keys(req.body).length === 0 ||
+      mcpMethod === 'initialize' ||
+      mcpMethod === 'tools/list' ||
+      mcpMethod === 'resources/list' ||
+      mcpMethod === 'prompts/list'
+    );
     
-    if (!hasCredentials && !hasBody) {
+    if (isDiscoveryRequest) {
       // Return server capabilities for discovery (Smithery scanning)
+      // This mimics an MCP initialize response
       return res.status(200).json({
-        name: 'ghost-mcp-ts',
-        version: '0.1.0',
-        description: 'MCP server for Ghost CMS Admin API - manage posts, members, newsletters, and more',
-        capabilities: {
-          tools: true,
-          resources: true,
-          prompts: true
-        },
-        authentication: {
-          type: 'query-params',
-          required: ['url', 'key'],
-          optional: ['version'],
-          description: 'Provide Ghost API credentials via query parameters',
-          example: '/mcp?url=https://your-ghost-site.com&key=your-admin-api-key'
+        jsonrpc: '2.0',
+        id: req.body?.id || 1,
+        result: {
+          protocolVersion: '2024-11-05',
+          serverInfo: {
+            name: 'ghost-mcp-ts',
+            version: '0.1.0'
+          },
+          capabilities: {
+            tools: {},
+            resources: {},
+            prompts: {},
+            logging: {}
+          },
+          instructions: 'Ghost CMS MCP Server - Requires authentication via query parameters. Add ?url=YOUR_GHOST_URL&key=YOUR_ADMIN_KEY to the endpoint URL.'
         }
       });
     }
