@@ -283,6 +283,64 @@ app.options('*', cors());
 // Store MCP servers per Ghost credentials (reused across requests)
 const mcpServers = new Map<string, McpServer>();
 
+// Smithery server-card.json endpoint for external MCP discovery
+app.get('/.well-known/mcp/server-card.json', (req: Request, res: Response) => {
+  trackRequest(req, '/.well-known/mcp/server-card.json');
+  res.json({
+    name: 'ghost-mcp-ts',
+    version: '0.1.0',
+    description: 'MCP server for Ghost CMS Admin API - manage posts, members, newsletters, tags, and more',
+    homepage: 'https://github.com/hithereiamaliff/mcp-ghostcms',
+    transport: {
+      type: 'streamable-http',
+      url: '/mcp'
+    },
+    capabilities: {
+      tools: true,
+      resources: true,
+      prompts: true
+    },
+    authentication: {
+      type: 'query-params',
+      params: [
+        { name: 'url', required: true, description: 'Your Ghost site URL (e.g., https://your-site.com)' },
+        { name: 'key', required: true, description: 'Your Ghost Admin API key (format: id:secret)' },
+        { name: 'version', required: false, description: 'Ghost API version (default: v5.0)' }
+      ]
+    }
+  });
+});
+
+// Smithery mcp-config endpoint for session configuration
+app.get('/.well-known/mcp-config', (req: Request, res: Response) => {
+  trackRequest(req, '/.well-known/mcp-config');
+  res.json({
+    schema: {
+      type: 'object',
+      properties: {
+        url: {
+          type: 'string',
+          description: 'Your Ghost site URL (e.g., https://your-site.com)',
+          title: 'Ghost URL'
+        },
+        key: {
+          type: 'string',
+          description: 'Your Ghost Admin API key (format: id:secret)',
+          title: 'Admin API Key',
+          format: 'password'
+        },
+        version: {
+          type: 'string',
+          description: 'Ghost API version',
+          title: 'API Version',
+          default: 'v5.0'
+        }
+      },
+      required: ['url', 'key']
+    }
+  });
+});
+
 // Health check endpoint
 app.get('/health', (req: Request, res: Response) => {
   trackRequest(req, '/health');
