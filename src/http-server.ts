@@ -675,40 +675,61 @@ app.all('/mcp', async (req: Request, res: Response) => {
     }
     
     // Handle Smithery discovery/scanning requests (no credentials)
-    // Smithery sends POST with MCP initialize method to discover server capabilities
-    // We allow this without credentials so the server can be scanned
+    // Smithery sends POST with MCP initialize/tools/list methods to discover server capabilities
+    // We create a temporary demo server to handle these requests without real Ghost credentials
     const hasCredentials = ghostUrl && ghostKey;
     const mcpMethod = req.body?.method;
-    const isDiscoveryRequest = !hasCredentials && (
-      !req.body || 
-      Object.keys(req.body).length === 0 ||
+    const isDiscoveryRequest = !hasCredentials && mcpMethod && (
       mcpMethod === 'initialize' ||
       mcpMethod === 'tools/list' ||
       mcpMethod === 'resources/list' ||
-      mcpMethod === 'prompts/list'
+      mcpMethod === 'prompts/list' ||
+      mcpMethod === 'notifications/initialized'
     );
     
     if (isDiscoveryRequest) {
-      // Return server capabilities for discovery (Smithery scanning)
-      // This mimics an MCP initialize response
-      return res.status(200).json({
-        jsonrpc: '2.0',
-        id: req.body?.id || 1,
-        result: {
-          protocolVersion: '2024-11-05',
-          serverInfo: {
-            name: 'ghost-mcp-ts',
-            version: '0.1.0'
-          },
-          capabilities: {
-            tools: {},
-            resources: {},
-            prompts: {},
-            logging: {}
-          },
-          instructions: 'Ghost CMS MCP Server - Requires authentication via query parameters. Add ?url=YOUR_GHOST_URL&key=YOUR_ADMIN_KEY to the endpoint URL.'
+      // Create a demo MCP server for discovery (no real Ghost connection)
+      console.log(`[DEBUG] Handling discovery request: ${mcpMethod}`);
+      
+      const demoServer = new McpServer({
+        name: 'ghost-mcp-ts',
+        version: '0.1.0',
+        capabilities: {
+          resources: {},
+          tools: {},
+          prompts: {},
+          logging: {}
         }
       });
+      
+      // Register minimal demo tools for discovery
+      demoServer.tool('ghost_list_posts', 'List all posts from Ghost CMS', {}, async () => ({
+        content: [{ type: 'text', text: 'Demo: Requires Ghost credentials' }]
+      }));
+      demoServer.tool('ghost_create_post', 'Create a new post in Ghost CMS', {}, async () => ({
+        content: [{ type: 'text', text: 'Demo: Requires Ghost credentials' }]
+      }));
+      demoServer.tool('ghost_list_members', 'List all members from Ghost CMS', {}, async () => ({
+        content: [{ type: 'text', text: 'Demo: Requires Ghost credentials' }]
+      }));
+      demoServer.tool('ghost_list_tags', 'List all tags from Ghost CMS', {}, async () => ({
+        content: [{ type: 'text', text: 'Demo: Requires Ghost credentials' }]
+      }));
+      demoServer.tool('ghost_list_newsletters', 'List all newsletters from Ghost CMS', {}, async () => ({
+        content: [{ type: 'text', text: 'Demo: Requires Ghost credentials' }]
+      }));
+      
+      const transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: undefined,
+      });
+      
+      res.on('close', () => {
+        transport.close();
+      });
+      
+      await demoServer.connect(transport);
+      await transport.handleRequest(req, res, req.body);
+      return;
     }
     
     // Validate required parameters for actual MCP requests
