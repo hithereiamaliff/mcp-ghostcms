@@ -178,7 +178,9 @@ export function registerPostTools(server: McpServer) {
             const headers = {
                 'Authorization': `Ghost ${token}`
             };
-            const response = await axios.put(url, { posts: [args] }, { headers });
+            // Extract id from args - Ghost API expects id only in URL, not in request body
+            const { id, ...postData } = args;
+            const response = await axios.put(url, { posts: [postData] }, { headers });
             return {
                 content: [
                     {
