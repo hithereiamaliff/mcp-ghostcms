@@ -131,7 +131,10 @@ export function registerPostTools(server: McpServer) {
         }
         try {
             const token = generateGhostAdminToken(config.key);
-            const url = `${config.url}/ghost/api/admin/posts/`;
+            // Add source=html query param if html content is provided (Ghost 5.x uses Lexical format)
+            const url = args.html 
+                ? `${config.url}/ghost/api/admin/posts/?source=html`
+                : `${config.url}/ghost/api/admin/posts/`;
             const headers = {
                 'Authorization': `Ghost ${token}`
             };
@@ -174,7 +177,10 @@ export function registerPostTools(server: McpServer) {
         }
         try {
             const token = generateGhostAdminToken(config.key);
-            const url = `${config.url}/ghost/api/admin/posts/${args.id}/`;
+            // Add source=html query param if html content is provided (Ghost 5.x uses Lexical format)
+            const url = args.html
+                ? `${config.url}/ghost/api/admin/posts/${args.id}/?source=html`
+                : `${config.url}/ghost/api/admin/posts/${args.id}/`;
             const headers = {
                 'Authorization': `Ghost ${token}`
             };
