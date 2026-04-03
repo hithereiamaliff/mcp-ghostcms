@@ -13,7 +13,8 @@ import path from 'path';
 import { McpServer, ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { FirebaseAnalytics } from './firebase-analytics.js';
-import { initGhostApi } from './ghostApi.js';
+import { runWithGhostConfig, GhostApiConfig } from './ghostApi.js';
+import { isKeyServiceEnabled, resolveKeyCredentials } from './utils/key-service.js';
 import {
     handleUserResource,
     handleMemberResource,
@@ -44,11 +45,11 @@ const ANALYTICS_FILE = path.join(ANALYTICS_DATA_DIR, 'analytics.json');
 const SAVE_INTERVAL_MS = 60000; // Save every 60 seconds
 const MAX_RECENT_CALLS = 100;
 
-// Ghost API configuration - will be provided per-request via query params
-// Environment variables are optional fallbacks for testing
-const DEFAULT_GHOST_API_URL = process.env.GHOST_API_URL || '';
-const DEFAULT_GHOST_ADMIN_API_KEY = process.env.GHOST_ADMIN_API_KEY || '';
+// Ghost API default version
 const DEFAULT_GHOST_API_VERSION = process.env.GHOST_API_VERSION || 'v5.0';
+
+// MCP API key for analytics access gating
+const MCP_API_KEY = process.env.MCP_API_KEY || '';
 
 // Analytics interface
 interface Analytics {
@@ -176,6 +177,31 @@ function getUptime(): string {
   return `${minutes}m`;
 }
 
+// Normalize route for analytics — mask user keys to prevent high-cardinality metrics
+function normalizeRouteForAnalytics(req: Request): string {
+  if (req.path.startsWith('/mcp/usr_')) return '/mcp/:userKey';
+  if (req.path === '/mcp-debug/open') return '/mcp-debug/open';
+  if (req.path === '/.well-known/mcp/server-card.json') return '/.well-known/mcp/server-card.json';
+  if (req.path === '/mcp') return '/mcp';
+  return req.path;
+}
+
+function requireAnalyticsApiKey(req: Request, res: Response): boolean {
+  if (!MCP_API_KEY) {
+    return true;
+  }
+
+  if (req.get('X-API-Key') === MCP_API_KEY) {
+    return true;
+  }
+
+  res.status(401).json({
+    error: 'unauthorized',
+    message: 'Valid X-API-Key header required',
+  });
+  return false;
+}
+
 // Initialize Firebase Analytics
 const firebaseAnalytics = new FirebaseAnalytics('mcp-ghostcms');
 
@@ -204,18 +230,9 @@ const saveInterval = setInterval(async () => {
   }
 }, SAVE_INTERVAL_MS);
 
-// Create and configure MCP server with user-provided credentials
-function createMcpServer(ghostUrl: string, ghostKey: string, ghostVersion: string = 'v5.0') {
-  // Initialize Ghost API client with user-provided credentials
-  initGhostApi({
-    url: ghostUrl,
-    key: ghostKey,
-    version: ghostVersion,
-  });
-  
-  const keyId = (ghostKey || '').split(':')[0] || 'unknown';
-  console.log(`[ghost-mcp] Using Ghost Admin API: url=${ghostUrl}, version=${ghostVersion}, keyId=${keyId}`);
-
+// Create and configure MCP server.
+// In HTTP mode the Ghost client/config are supplied per request via AsyncLocalStorage.
+function createMcpServer() {
   const server = new McpServer({
     name: 'ghost-mcp-ts',
     version: '0.1.0',
@@ -280,9 +297,6 @@ app.use(cors({
 // Handle OPTIONS preflight requests explicitly
 app.options('*', cors());
 
-// Store MCP servers per Ghost credentials (reused across requests)
-const mcpServers = new Map<string, McpServer>();
-
 // Smithery server-card.json endpoint for external MCP discovery
 app.get('/.well-known/mcp/server-card.json', (req: Request, res: Response) => {
   trackRequest(req, '/.well-known/mcp/server-card.json');
@@ -301,11 +315,11 @@ app.get('/.well-known/mcp/server-card.json', (req: Request, res: Response) => {
       prompts: true
     },
     authentication: {
-      type: 'query-params',
-      params: [
-        { name: 'url', required: true, description: 'Your Ghost site URL (e.g., https://your-site.com)' },
-        { name: 'key', required: true, description: 'Your Ghost Admin API key (format: id:secret)' },
-        { name: 'version', required: false, description: 'Ghost API version (default: v5.0)' }
+      type: 'key-service',
+      description: 'Register your Ghost credentials at mcpkeys.techmavie.digital, then connect with your user key',
+      url_patterns: [
+        '/mcp/{user_key}',
+        '/mcp?api_key={user_key}'
       ]
     }
   });
@@ -318,25 +332,14 @@ app.get('/.well-known/mcp-config', (req: Request, res: Response) => {
     schema: {
       type: 'object',
       properties: {
-        url: {
+        api_key: {
           type: 'string',
-          description: 'Your Ghost site URL (e.g., https://your-site.com)',
-          title: 'Ghost URL'
-        },
-        key: {
-          type: 'string',
-          description: 'Your Ghost Admin API key (format: id:secret)',
-          title: 'Admin API Key',
+          description: 'Your MCP Key Service user key (format: usr_XXXXXXXX). Register at mcpkeys.techmavie.digital',
+          title: 'User API Key',
           format: 'password'
-        },
-        version: {
-          type: 'string',
-          description: 'Ghost API version',
-          title: 'API Version',
-          default: 'v5.0'
         }
       },
-      required: ['url', 'key']
+      required: ['api_key']
     }
   });
 });
@@ -362,20 +365,20 @@ app.get('/', (req: Request, res: Response) => {
     version: '0.1.0',
     description: 'MCP server for Ghost CMS Admin API',
     transport: 'streamable-http',
+    authentication: 'key-service',
     usage: {
-      mcpUrl: 'https://mcp.techmavie.digital/ghostcms/mcp?url=YOUR_GHOST_URL&key=YOUR_ADMIN_KEY',
-      parameters: {
-        url: 'Your Ghost site URL (e.g., https://your-site.com)',
-        key: 'Your Ghost Admin API key',
-        version: 'Ghost API version (optional, default: v5.0)'
-      }
+      mcpUrl: 'https://mcp.techmavie.digital/ghostcms/mcp/usr_YOUR_USER_KEY',
+      alternative: 'https://mcp.techmavie.digital/ghostcms/mcp?api_key=usr_YOUR_USER_KEY',
+      registration: 'Register your Ghost credentials at mcpkeys.techmavie.digital to get a user key',
     },
     endpoints: {
       health: '/health',
-      mcp: '/mcp?url=YOUR_GHOST_URL&key=YOUR_ADMIN_KEY',
+      mcp: '/mcp/:userKey',
       analytics: '/analytics',
       dashboard: '/analytics/dashboard',
     },
+    keyService: isKeyServiceEnabled() ? 'configured' : 'not configured',
+    analyticsAuth: MCP_API_KEY ? 'x-api-key required' : 'public',
     uptime: getUptime(),
   });
 });
@@ -383,6 +386,7 @@ app.get('/', (req: Request, res: Response) => {
 // Analytics JSON endpoint
 app.get('/analytics', (req: Request, res: Response) => {
   trackRequest(req, '/analytics');
+  if (!requireAnalyticsApiKey(req, res)) return;
   
   const sortedHourly = Object.entries(analytics.hourlyRequests)
     .sort((a, b) => b[0].localeCompare(a[0]))
@@ -400,6 +404,7 @@ app.get('/analytics', (req: Request, res: Response) => {
 // Analytics tools endpoint
 app.get('/analytics/tools', (req: Request, res: Response) => {
   trackRequest(req, '/analytics/tools');
+  if (!requireAnalyticsApiKey(req, res)) return;
   res.json({
     totalToolCalls: analytics.totalToolCalls,
     toolCalls: analytics.toolCalls,
@@ -410,6 +415,7 @@ app.get('/analytics/tools', (req: Request, res: Response) => {
 // Analytics dashboard HTML endpoint
 app.get('/analytics/dashboard', (req: Request, res: Response) => {
   trackRequest(req, '/analytics/dashboard');
+  if (!requireAnalyticsApiKey(req, res)) return;
   
   const dashboardHtml = `<!DOCTYPE html>
 <html lang="en">
@@ -622,6 +628,7 @@ app.get('/analytics/dashboard', (req: Request, res: Response) => {
 // Analytics import endpoint
 app.post('/analytics/import', (req: Request, res: Response) => {
   trackRequest(req, '/analytics/import');
+  if (!requireAnalyticsApiKey(req, res)) return;
   try {
     const importData = req.body;
     if (importData.totalRequests) {
@@ -643,181 +650,291 @@ app.post('/analytics/import', (req: Request, res: Response) => {
   }
 });
 
-// MCP endpoint - handle all MCP protocol requests
-app.all('/mcp', async (req: Request, res: Response) => {
-  // Fix Accept header for MCP SDK compatibility
-  // The SDK requires text/event-stream, but we want to accept */* and other common headers
+// =============================================================================
+// Shared MCP request handler — per-request isolation via AsyncLocalStorage
+// =============================================================================
+
+function fixAcceptHeader(req: Request): void {
   const acceptHeader = req.headers['accept'] || '';
   if (!acceptHeader.includes('text/event-stream')) {
-    // Inject text/event-stream into Accept header so SDK accepts the request
     req.headers['accept'] = acceptHeader ? `${acceptHeader}, text/event-stream` : 'text/event-stream';
   }
-  trackRequest(req, '/mcp');
-  
-  // Track tool calls
-  if (req.body && req.body.method === 'tools/call' && req.body.params?.name) {
+}
+
+async function handleMcpRequest(req: Request, res: Response, ghostConfig: GhostApiConfig): Promise<void> {
+  fixAcceptHeader(req);
+  trackRequest(req, normalizeRouteForAnalytics(req));
+
+  if (req.body?.method === 'tools/call' && req.body?.params?.name) {
     trackToolCall(req.body.params.name, req);
   }
-  
-  try {
-    // Extract Ghost credentials from query parameters
-    let ghostUrl = req.query.url as string || DEFAULT_GHOST_API_URL;
-    const ghostKey = req.query.key as string || DEFAULT_GHOST_ADMIN_API_KEY;
-    const ghostVersion = req.query.version as string || DEFAULT_GHOST_API_VERSION;
-    
-    // Debug logging
-    console.log(`[DEBUG] Received URL param: ${ghostUrl}`);
-    
-    // Auto-add https:// if missing protocol
-    if (ghostUrl && !ghostUrl.match(/^https?:\/\//)) {
-      ghostUrl = `https://${ghostUrl}`;
-      console.log(`[DEBUG] Added https:// prefix: ${ghostUrl}`);
+
+  const keyId = (ghostConfig.key || '').split(':')[0] || 'unknown';
+  console.log(`[ghost-mcp] Handling MCP request: route=${normalizeRouteForAnalytics(req)}, url=${ghostConfig.url}, version=${ghostConfig.version}, keyId=${keyId}`);
+
+  // Create a fresh MCP server per request for tenant isolation
+  const mcpServer = createMcpServer();
+
+  const transport = new StreamableHTTPServerTransport({
+    sessionIdGenerator: undefined,
+  });
+
+  let cleanedUp = false;
+  const cleanup = () => {
+    if (cleanedUp) return;
+    cleanedUp = true;
+    void transport.close();
+    void mcpServer.close();
+  };
+
+  res.once('finish', cleanup);
+  res.once('close', cleanup);
+
+  // Run within scoped config so tool handlers see the correct credentials
+  await runWithGhostConfig(ghostConfig, async () => {
+    await mcpServer.connect(transport);
+    await transport.handleRequest(req, res, req.body);
+  });
+}
+
+// =============================================================================
+// Smithery discovery handler (no credentials required)
+// =============================================================================
+
+function isDiscoveryMethod(method: string | undefined): boolean {
+  return !!method && [
+    'initialize',
+    'tools/list',
+    'resources/list',
+    'prompts/list',
+    'notifications/initialized',
+  ].includes(method);
+}
+
+async function handleDiscoveryRequest(req: Request, res: Response): Promise<void> {
+  fixAcceptHeader(req);
+  trackRequest(req, '/mcp');
+
+  console.log(`[ghost-mcp] Handling discovery request: ${req.body?.method}`);
+
+  const demoServer = new McpServer({
+    name: 'ghost-mcp-ts',
+    version: '0.1.0',
+    capabilities: {
+      resources: {},
+      tools: {},
+      prompts: {},
+      logging: {}
     }
-    
-    // Handle Smithery discovery/scanning requests (no credentials)
-    // Smithery sends POST with MCP initialize/tools/list methods to discover server capabilities
-    // We create a temporary demo server to handle these requests without real Ghost credentials
-    const hasCredentials = ghostUrl && ghostKey;
-    const mcpMethod = req.body?.method;
-    const isDiscoveryRequest = !hasCredentials && mcpMethod && (
-      mcpMethod === 'initialize' ||
-      mcpMethod === 'tools/list' ||
-      mcpMethod === 'resources/list' ||
-      mcpMethod === 'prompts/list' ||
-      mcpMethod === 'notifications/initialized'
-    );
-    
-    if (isDiscoveryRequest) {
-      // Create a demo MCP server for discovery (no real Ghost connection)
-      console.log(`[DEBUG] Handling discovery request: ${mcpMethod}`);
-      
-      const demoServer = new McpServer({
-        name: 'ghost-mcp-ts',
-        version: '0.1.0',
-        capabilities: {
-          resources: {},
-          tools: {},
-          prompts: {},
-          logging: {}
-        }
+  });
+
+  const demoHandler = async () => ({
+    content: [{ type: 'text' as const, text: 'Requires a valid MCP Key Service user key (usr_XXXXXXXX)' }]
+  });
+
+  // Posts tools
+  demoServer.tool('posts_browse', 'Browse and list posts with filtering and pagination', {}, demoHandler);
+  demoServer.tool('posts_read', 'Read a specific post by ID or slug', {}, demoHandler);
+  demoServer.tool('posts_add', 'Create a new post with title, content, tags, and publishing options', {}, demoHandler);
+  demoServer.tool('posts_edit', 'Edit an existing post', {}, demoHandler);
+  demoServer.tool('posts_delete', 'Delete a post by ID', {}, demoHandler);
+
+  // Members tools
+  demoServer.tool('members_browse', 'Browse and list members with filtering and pagination', {}, demoHandler);
+  demoServer.tool('members_read', 'Read a specific member by ID or email', {}, demoHandler);
+  demoServer.tool('members_add', 'Add a new member with email and subscription details', {}, demoHandler);
+  demoServer.tool('members_edit', 'Edit an existing member', {}, demoHandler);
+  demoServer.tool('members_delete', 'Delete a member by ID', {}, demoHandler);
+
+  // Users tools
+  demoServer.tool('users_browse', 'Browse and list staff users', {}, demoHandler);
+  demoServer.tool('users_read', 'Read a specific user by ID or slug', {}, demoHandler);
+  demoServer.tool('users_edit', 'Edit a staff user', {}, demoHandler);
+  demoServer.tool('users_delete', 'Delete a staff user', {}, demoHandler);
+
+  // Tags tools
+  demoServer.tool('tags_browse', 'Browse and list tags', {}, demoHandler);
+  demoServer.tool('tags_read', 'Read a specific tag by ID or slug', {}, demoHandler);
+  demoServer.tool('tags_add', 'Create a new tag', {}, demoHandler);
+  demoServer.tool('tags_edit', 'Edit an existing tag', {}, demoHandler);
+  demoServer.tool('tags_delete', 'Delete a tag by ID', {}, demoHandler);
+
+  // Tiers tools
+  demoServer.tool('tiers_browse', 'Browse and list membership tiers', {}, demoHandler);
+  demoServer.tool('tiers_read', 'Read a specific tier by ID', {}, demoHandler);
+  demoServer.tool('tiers_add', 'Create a new membership tier', {}, demoHandler);
+  demoServer.tool('tiers_edit', 'Edit an existing tier', {}, demoHandler);
+  demoServer.tool('tiers_delete', 'Delete a tier by ID', {}, demoHandler);
+
+  // Offers tools
+  demoServer.tool('offers_browse', 'Browse and list promotional offers', {}, demoHandler);
+  demoServer.tool('offers_read', 'Read a specific offer by ID', {}, demoHandler);
+  demoServer.tool('offers_add', 'Create a new promotional offer', {}, demoHandler);
+  demoServer.tool('offers_edit', 'Edit an existing offer', {}, demoHandler);
+  demoServer.tool('offers_delete', 'Delete an offer by ID', {}, demoHandler);
+
+  // Newsletters tools
+  demoServer.tool('newsletters_browse', 'Browse and list newsletters', {}, demoHandler);
+  demoServer.tool('newsletters_read', 'Read a specific newsletter by ID', {}, demoHandler);
+  demoServer.tool('newsletters_add', 'Create a new newsletter', {}, demoHandler);
+  demoServer.tool('newsletters_edit', 'Edit an existing newsletter', {}, demoHandler);
+  demoServer.tool('newsletters_delete', 'Delete a newsletter by ID', {}, demoHandler);
+
+  // Invites tools
+  demoServer.tool('invites_browse', 'Browse and list staff invites', {}, demoHandler);
+  demoServer.tool('invites_add', 'Send a new staff invite', {}, demoHandler);
+  demoServer.tool('invites_delete', 'Delete/revoke an invite', {}, demoHandler);
+
+  // Roles tools
+  demoServer.tool('roles_browse', 'Browse and list available roles', {}, demoHandler);
+  demoServer.tool('roles_read', 'Read a specific role by ID', {}, demoHandler);
+
+  // Webhooks tools
+  demoServer.tool('webhooks_add', 'Create a new webhook', {}, demoHandler);
+  demoServer.tool('webhooks_edit', 'Edit an existing webhook', {}, demoHandler);
+  demoServer.tool('webhooks_delete', 'Delete a webhook by ID', {}, demoHandler);
+
+  // Debug tools
+  demoServer.tool('admin_site_ping', 'Ping the Ghost Admin API to check connectivity', {}, demoHandler);
+  demoServer.tool('config_echo', 'Echo the current Ghost configuration (masked)', {}, demoHandler);
+
+  const transport = new StreamableHTTPServerTransport({
+    sessionIdGenerator: undefined,
+  });
+
+  let cleanedUp = false;
+  const cleanup = () => {
+    if (cleanedUp) return;
+    cleanedUp = true;
+    void transport.close();
+    void demoServer.close();
+  };
+
+  res.once('finish', cleanup);
+  res.once('close', cleanup);
+
+  await demoServer.connect(transport);
+  await transport.handleRequest(req, res, req.body);
+}
+
+// =============================================================================
+// Resolve a user key and return Ghost config, or send error response
+// =============================================================================
+
+async function resolveUserKey(
+  userKey: string,
+  req: Request,
+  res: Response,
+): Promise<GhostApiConfig | null> {
+  if (!isKeyServiceEnabled()) {
+    trackRequest(req, normalizeRouteForAnalytics(req));
+    if (!res.headersSent) {
+      res.status(503).json({
+        jsonrpc: '2.0',
+        error: { code: -32600, message: 'Key service not configured on this server' },
+        id: null,
       });
-      
-      // Register ALL Ghost CMS tools for proper Smithery discovery
-      const demoHandler = async () => ({
-        content: [{ type: 'text' as const, text: 'Requires Ghost credentials via query params' }]
+    }
+    return null;
+  }
+
+  if (typeof userKey !== 'string' || !userKey.startsWith('usr_')) {
+    trackRequest(req, normalizeRouteForAnalytics(req));
+    if (!res.headersSent) {
+      res.status(403).json({
+        jsonrpc: '2.0',
+        error: { code: -32600, message: 'Invalid user key format. Expected usr_XXXXXXXX' },
+        id: null,
       });
-      
-      // Posts tools
-      demoServer.tool('posts_browse', 'Browse and list posts with filtering and pagination', {}, demoHandler);
-      demoServer.tool('posts_read', 'Read a specific post by ID or slug', {}, demoHandler);
-      demoServer.tool('posts_add', 'Create a new post with title, content, tags, and publishing options', {}, demoHandler);
-      demoServer.tool('posts_edit', 'Edit an existing post', {}, demoHandler);
-      demoServer.tool('posts_delete', 'Delete a post by ID', {}, demoHandler);
-      
-      // Members tools
-      demoServer.tool('members_browse', 'Browse and list members with filtering and pagination', {}, demoHandler);
-      demoServer.tool('members_read', 'Read a specific member by ID or email', {}, demoHandler);
-      demoServer.tool('members_add', 'Add a new member with email and subscription details', {}, demoHandler);
-      demoServer.tool('members_edit', 'Edit an existing member', {}, demoHandler);
-      demoServer.tool('members_delete', 'Delete a member by ID', {}, demoHandler);
-      
-      // Users tools
-      demoServer.tool('users_browse', 'Browse and list staff users', {}, demoHandler);
-      demoServer.tool('users_read', 'Read a specific user by ID or slug', {}, demoHandler);
-      demoServer.tool('users_edit', 'Edit a staff user', {}, demoHandler);
-      demoServer.tool('users_delete', 'Delete a staff user', {}, demoHandler);
-      
-      // Tags tools
-      demoServer.tool('tags_browse', 'Browse and list tags', {}, demoHandler);
-      demoServer.tool('tags_read', 'Read a specific tag by ID or slug', {}, demoHandler);
-      demoServer.tool('tags_add', 'Create a new tag', {}, demoHandler);
-      demoServer.tool('tags_edit', 'Edit an existing tag', {}, demoHandler);
-      demoServer.tool('tags_delete', 'Delete a tag by ID', {}, demoHandler);
-      
-      // Tiers tools
-      demoServer.tool('tiers_browse', 'Browse and list membership tiers', {}, demoHandler);
-      demoServer.tool('tiers_read', 'Read a specific tier by ID', {}, demoHandler);
-      demoServer.tool('tiers_add', 'Create a new membership tier', {}, demoHandler);
-      demoServer.tool('tiers_edit', 'Edit an existing tier', {}, demoHandler);
-      demoServer.tool('tiers_delete', 'Delete a tier by ID', {}, demoHandler);
-      
-      // Offers tools
-      demoServer.tool('offers_browse', 'Browse and list promotional offers', {}, demoHandler);
-      demoServer.tool('offers_read', 'Read a specific offer by ID', {}, demoHandler);
-      demoServer.tool('offers_add', 'Create a new promotional offer', {}, demoHandler);
-      demoServer.tool('offers_edit', 'Edit an existing offer', {}, demoHandler);
-      demoServer.tool('offers_delete', 'Delete an offer by ID', {}, demoHandler);
-      
-      // Newsletters tools
-      demoServer.tool('newsletters_browse', 'Browse and list newsletters', {}, demoHandler);
-      demoServer.tool('newsletters_read', 'Read a specific newsletter by ID', {}, demoHandler);
-      demoServer.tool('newsletters_add', 'Create a new newsletter', {}, demoHandler);
-      demoServer.tool('newsletters_edit', 'Edit an existing newsletter', {}, demoHandler);
-      demoServer.tool('newsletters_delete', 'Delete a newsletter by ID', {}, demoHandler);
-      
-      // Invites tools
-      demoServer.tool('invites_browse', 'Browse and list staff invites', {}, demoHandler);
-      demoServer.tool('invites_add', 'Send a new staff invite', {}, demoHandler);
-      demoServer.tool('invites_delete', 'Delete/revoke an invite', {}, demoHandler);
-      
-      // Roles tools
-      demoServer.tool('roles_browse', 'Browse and list available roles', {}, demoHandler);
-      demoServer.tool('roles_read', 'Read a specific role by ID', {}, demoHandler);
-      
-      // Webhooks tools
-      demoServer.tool('webhooks_add', 'Create a new webhook', {}, demoHandler);
-      demoServer.tool('webhooks_edit', 'Edit an existing webhook', {}, demoHandler);
-      demoServer.tool('webhooks_delete', 'Delete a webhook by ID', {}, demoHandler);
-      
-      // Debug tools
-      demoServer.tool('admin_site_ping', 'Ping the Ghost Admin API to check connectivity', {}, demoHandler);
-      demoServer.tool('config_echo', 'Echo the current Ghost configuration (masked)', {}, demoHandler);
-      
-      const transport = new StreamableHTTPServerTransport({
-        sessionIdGenerator: undefined,
+    }
+    return null;
+  }
+
+  const result = await resolveKeyCredentials(userKey);
+
+  if (!result.ok) {
+    trackRequest(req, normalizeRouteForAnalytics(req));
+    const status = result.reason === 'invalid_key' ? 403 : 503;
+    const message = result.reason === 'invalid_key'
+      ? 'Invalid or expired user key'
+      : 'Key service temporarily unavailable';
+
+    if (!res.headersSent) {
+      res.status(status).json({
+        jsonrpc: '2.0',
+        error: { code: -32600, message },
+        id: null,
       });
-      
-      res.on('close', () => {
-        transport.close();
-      });
-      
-      await demoServer.connect(transport);
-      await transport.handleRequest(req, res, req.body);
+    }
+    return null;
+  }
+
+  let ghostUrl = result.credentials.ghostUrl;
+  if (ghostUrl && !ghostUrl.match(/^https?:\/\//)) {
+    ghostUrl = `https://${ghostUrl}`;
+  }
+
+  return {
+    url: ghostUrl,
+    key: result.credentials.ghostAdminKey,
+    version: DEFAULT_GHOST_API_VERSION,
+  };
+}
+
+// =============================================================================
+// MCP endpoints
+// =============================================================================
+
+// Hosted key-service mode: /mcp/:userKey
+app.all('/mcp/:userKey', async (req: Request, res: Response) => {
+  try {
+    const ghostConfig = await resolveUserKey(req.params.userKey, req, res);
+    if (!ghostConfig) return; // error already sent
+
+    await handleMcpRequest(req, res, ghostConfig);
+  } catch (error) {
+    console.error('MCP request error:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Internal server error', details: String(error) });
+    }
+  }
+});
+
+// Query-param key-service + Smithery discovery: /mcp
+app.all('/mcp', async (req: Request, res: Response) => {
+  try {
+    // Check for user key in query params
+    const apiKey = (req.query.api_key || req.query.apiKey) as string | undefined;
+
+    if (apiKey && apiKey.startsWith('usr_')) {
+      // Resolve via key service
+      const ghostConfig = await resolveUserKey(apiKey, req, res);
+      if (!ghostConfig) return; // error already sent
+
+      await handleMcpRequest(req, res, ghostConfig);
       return;
     }
-    
-    // Validate required parameters for actual MCP requests
-    if (!ghostUrl || !ghostKey) {
-      return res.status(400).json({ 
-        error: 'Missing required parameters',
-        message: 'Please provide Ghost API credentials via query parameters: ?url=YOUR_GHOST_URL&key=YOUR_ADMIN_KEY',
-        example: '/mcp?url=https://your-ghost-site.com&key=your-admin-api-key'
+
+    // Handle Smithery discovery/scanning requests (no credentials)
+    const mcpMethod = req.body?.method;
+    if (isDiscoveryMethod(mcpMethod)) {
+      await handleDiscoveryRequest(req, res);
+      return;
+    }
+
+    // No valid authentication provided
+    trackRequest(req, '/mcp');
+    if (!res.headersSent) {
+      res.status(400).json({
+        error: 'Authentication required',
+        message: 'Ghost CMS MCP Server requires a valid MCP Key Service user key.',
+        usage: {
+          path: '/mcp/usr_YOUR_USER_KEY',
+          query: '/mcp?api_key=usr_YOUR_USER_KEY',
+          registration: 'Register your Ghost credentials at mcpkeys.techmavie.digital',
+        },
       });
     }
-    
-    // Create unique key for Ghost credentials (for server instance reuse)
-    const credentialsKey = `${ghostUrl}:${ghostKey.split(':')[0]}`;
-    
-    // Get or create MCP server for these credentials
-    let mcpServer = mcpServers.get(credentialsKey);
-    if (!mcpServer) {
-      mcpServer = createMcpServer(ghostUrl, ghostKey, ghostVersion);
-      mcpServers.set(credentialsKey, mcpServer);
-    }
-    
-    // Create a NEW transport for EACH request (stateless mode)
-    // This allows multiple clients to connect without session conflicts
-    const transport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: undefined, // Let SDK generate unique session IDs
-    });
-    
-    // Clean up transport after response is sent
-    res.on('close', () => {
-      transport.close();
-    });
-    
-    await mcpServer.server.connect(transport);
-    await transport.handleRequest(req, res, req.body);
   } catch (error) {
     console.error('MCP request error:', error);
     if (!res.headersSent) {
@@ -845,8 +962,11 @@ process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 app.listen(PORT, HOST, () => {
   console.log(`\n🚀 Ghost CMS MCP Server (HTTP) running on http://${HOST}:${PORT}`);
   console.log(`   Health: http://${HOST}:${PORT}/health`);
-  console.log(`   MCP:    http://${HOST}:${PORT}/mcp`);
+  console.log(`   MCP (hosted): http://${HOST}:${PORT}/mcp/:userKey`);
+  console.log(`   MCP (query):  http://${HOST}:${PORT}/mcp?api_key=usr_...`);
   console.log(`   Analytics: http://${HOST}:${PORT}/analytics`);
   console.log(`   Dashboard: http://${HOST}:${PORT}/analytics/dashboard`);
+  console.log(`   Key service: ${isKeyServiceEnabled() ? 'configured' : 'not configured'}`);
+  console.log(`   Analytics auth: ${MCP_API_KEY ? 'X-API-Key required' : 'public'}`);
   console.log(`\n📊 Analytics will be saved to: ${ANALYTICS_FILE}`);
 });

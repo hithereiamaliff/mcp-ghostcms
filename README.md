@@ -12,7 +12,7 @@ This Model Context Protocol (MCP) server provides a powerful and flexible way to
 - **Enhanced Error Handling**: Provides detailed status codes and response bodies.
 - **Modern Transport**: Exclusively uses the Streamable HTTP transport, with all deprecated STDIO logic removed.
 - **Diagnostic Tools**: Includes tools for troubleshooting API connectivity and configuration.
-- **Multi-Tenant Support**: Accepts Ghost API credentials via URL query parameters for public/shared deployments.
+- **Multi-Tenant Support**: Uses `mcp-key-service` so public/shared deployments never expose raw Ghost credentials in MCP URLs.
 - **Firebase Analytics**: Cloud-based analytics storage with Firebase Realtime Database and local file backup.
 - **VPS Deployment Ready**: Docker, Nginx, and GitHub Actions auto-deployment support.
 
@@ -71,23 +71,21 @@ npm run dev
 
 This will start the server on port 8080 and open the Smithery Playground in your browser.
 
-### Method 3: Self-Hosted VPS with URL Query Parameters
+### Method 3: Self-Hosted VPS with MCP Key Service
 
-For public/shared deployments, this MCP server can be self-hosted on a VPS and accepts Ghost API credentials via URL query parameters. This allows multiple users to connect their own Ghost instances without server-side configuration.
+For public/shared deployments, this MCP server can be self-hosted on a VPS and resolves Ghost credentials through `mcp-key-service`. Users register their Ghost site URL and admin key once, receive a `usr_XXXXXXXX` key, and only that user key appears in the MCP URL.
 
 #### MCP URL Format
 
 ```
-https://your-domain.com/ghostcms/mcp?url=YOUR_GHOST_URL&key=YOUR_ADMIN_API_KEY&version=v5.0
+https://your-domain.com/ghostcms/mcp/usr_YOUR_USER_KEY
 ```
 
-**Query Parameters:**
+Alternative query-param form:
 
-| Parameter | Required | Description | Example |
-|-----------|----------|-------------|---------|
-| `url` | Yes | Your Ghost site URL (with `https://`) | `https://myblog.ghost.io` |
-| `key` | Yes | Ghost Admin API Key (`id:secret` format) | `abc123:def456...` |
-| `version` | No | Ghost API version (default: `v5.0`) | `v5.0` or `v6.0` |
+```
+https://your-domain.com/ghostcms/mcp?api_key=usr_YOUR_USER_KEY
+```
 
 #### Example Usage with Claude Desktop
 
@@ -98,7 +96,7 @@ Add to your `claude_desktop_config.json`:
   "mcpServers": {
     "ghost-myblog": {
       "type": "streamable-http",
-      "url": "https://mcp.yourdomain.com/ghostcms/mcp?url=https://myblog.ghost.io&key=YOUR_ADMIN_API_KEY"
+      "url": "https://mcp.yourdomain.com/ghostcms/mcp/usr_YOUR_USER_KEY"
     }
   }
 }
@@ -108,10 +106,10 @@ Add to your `claude_desktop_config.json`:
 
 A public instance is available at:
 ```
-https://mcp.techmavie.digital/ghostcms/mcp?url=YOUR_GHOST_URL&key=YOUR_ADMIN_API_KEY
+https://mcp.techmavie.digital/ghostcms/mcp/usr_YOUR_USER_KEY
 ```
 
-> **Note:** The `https://` prefix is automatically added if missing from the URL parameter.
+> **Note:** Register your Ghost credentials at `mcpkeys.techmavie.digital` to obtain a `usr_` key first.
 
 ### Configuration
 
@@ -121,6 +119,8 @@ This MCP server requires the following configuration:
 - **GHOST_ADMIN_API_KEY**: Your Ghost Admin API key in `id:secret` format (from Ghost Admin → Settings → Integrations).
 - **GHOST_API_VERSION**: Ghost API version (`v5.0` for Ghost 5.x, `v6.0` for Ghost 6.x).
 - **GHOST_CONTENT_API_KEY** (optional): Your Ghost Content API key for read-only operations.
+
+For hosted HTTP mode, configure `KEY_SERVICE_URL` and `KEY_SERVICE_TOKEN` on the server, and set `MCP_API_KEY` if you want to protect the analytics endpoints with an `X-API-Key` header.
 
 ## Available Resources
 
@@ -257,7 +257,7 @@ curl -s -X POST \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}' \
-  "https://mcp.techmavie.digital/ghostcms/mcp?url=https://your-site.com&key=YOUR_KEY"
+  "https://mcp.techmavie.digital/ghostcms/mcp/usr_YOUR_USER_KEY"
 
 # Expected response (SSE format):
 # event: message
@@ -269,7 +269,7 @@ curl -s -X POST \
 **For MCP Clients (Claude Desktop, Claude iOS, Claude Code):**
 - MCP clients automatically handle the initialization protocol and session management
 - Ensure your MCP URL is correctly formatted in your client configuration
-- For Claude iOS, use the Connectors feature with the full MCP URL including query parameters
+- For Claude iOS, use the Connectors feature with the full MCP URL using your `usr_` key
 - For Claude Code, add the server to your MCP settings with type `streamable-http`
 
 **Session Management:**
@@ -335,7 +335,7 @@ docker compose logs -f
 | Endpoint | Description |
 |----------|-------------|
 | `/health` | Health check |
-| `/mcp` | MCP endpoint (with query params) |
+| `/mcp/:userKey` | MCP endpoint (hosted key-service) |
 | `/analytics` | Analytics JSON data |
 | `/analytics/dashboard` | Visual analytics dashboard |
 | `/analytics/tools` | Tool usage statistics |
