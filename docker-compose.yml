@@ -37,7 +37,7 @@ services:
 
 networks:
   mcp-network:
-    driver: bridge
+    external: true
 
 volumes:
   analytics-data:
